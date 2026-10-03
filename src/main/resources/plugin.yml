@@ -1,5 +1,5 @@
 name: rVisualBoards
-version: '1.0'
+version: '1.1'
 main: ru.rulhot.rVisualBoards.RVisualBoards
 api-version: '1.21.4'
 load: POSTWORLD

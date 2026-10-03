@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 @UtilityClass
 public class MessageUtil {
@@ -20,6 +21,7 @@ public class MessageUtil {
     private final @NotNull MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
     private final @NotNull String TAG_PREFIX = "rvb_";
     private final @NotNull String EXTERNAL_SEPARATOR = " ";
+    private final @NotNull Pattern MINI_TAG = Pattern.compile("</?[a-zA-Z#!][^<>]*>");
 
     public @NotNull Component parseText(@NotNull String text) {
         return MINI_MESSAGE.deserialize(text);
@@ -41,12 +43,16 @@ public class MessageUtil {
         return MINI_MESSAGE.deserialize(prepared, TagResolver.resolver(resolvers));
     }
 
-    public @NotNull Component parseExternalLegacy(@NotNull String raw) {
+    public @NotNull Component parseExternal(@NotNull String raw) {
         if (raw.isBlank()) {
             return Component.empty();
         }
         String text = raw.endsWith(EXTERNAL_SEPARATOR) ? raw : raw + EXTERNAL_SEPARATOR;
-        LegacyComponentSerializer serializer = text.indexOf(LegacyComponentSerializer.SECTION_CHAR) >= 0
+        boolean section = text.indexOf(LegacyComponentSerializer.SECTION_CHAR) >= 0;
+        if (!section && MINI_TAG.matcher(text).find()) {
+            return MINI_MESSAGE.deserialize(text);
+        }
+        LegacyComponentSerializer serializer = section
                 ? LegacyComponentSerializer.legacySection()
                 : LegacyComponentSerializer.legacyAmpersand();
         return serializer.deserialize(text);

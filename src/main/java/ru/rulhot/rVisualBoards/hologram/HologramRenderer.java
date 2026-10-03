@@ -281,7 +281,7 @@ final class HologramRenderer {
         Entry entry = snapshot == null ? null : snapshot.entry(place);
         Map<String, Object> placeholders = Map.of(
                 PLACE, place,
-                PREFIX, entry == null ? Component.empty() : MessageUtil.parseExternalLegacy(entry.prefix()),
+                PREFIX, entry == null ? Component.empty() : MessageUtil.parseExternal(entry.prefix()),
                 NAME, entry == null ? "" : entry.name(),
                 VALUE, entry == null ? "" : entry.value());
         List<FormatKey> keys = entry == null ? EMPTY_KEYS : ROW_KEYS;
