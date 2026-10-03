@@ -1,0 +1,65 @@
+prefix: "<b><gradient:#82ABF0:#82ABF0><shadow:#2B3A52:1>rVisualBoards</shadow></gradient></b> <dark_gray>»</dark_gray> <white>"
+
+general:
+  help: |-
+    <b><gradient:#82ABF0:#82ABF0><shadow:#2B3A52:1>rVisualBoards</shadow></gradient></b> <dark_gray>— <white>голограммы-топы
+    <white> /rvb help <dark_gray>— <white>список команд
+    <white> /rvb create <id> <вид> <dark_gray>— <white>создать табло там, где вы стоите (вид — файл из папки tops)
+    <white> /rvb movehere <id> <dark_gray>— <white>перенести табло к себе
+    <white> /rvb edit <id> <dark_gray>— <white>поворот, размер, вид и первый топ табло
+    <white> /rvb remove <id> <dark_gray>— <white>удалить табло
+    <white> /rvb list <dark_gray>— <white>список табло
+    <white> /rvb reload <dark_gray>— <white>перезагрузить конфиги и папку tops
+  player-only: "{prefix}<white>Эта команда доступна только игроку."
+  not-ready: "{prefix}<white>Плагин ещё загружается или конфигурация с ошибкой — проверьте консоль и выполните /rvb reload."
+  board-not-found: "{prefix}<white>Табло <white>{id}</white> не найдено. Список табло: <white>/rvb list"
+  type-missing: "{prefix}<white>Нет файла <white>tops/{type}.yml</white>. Есть: <white>{types}"
+
+create:
+  success: "{prefix}Табло <white>{id}</white> (<white>{type}</white>) создано: <white>{world} {x} {y} {z}</white>. Отойдите на пару блоков назад, чтобы увидеть его."
+  no-type: "{prefix}Укажите вид табло: <white>/rvb create {id} <вид></white>. Есть: <white>{types}"
+  invalid-id: "{prefix}<white>ID может содержать только a-z, 0-9, _ и - (до 32 символов). Например: <white>/rvb create spawn loonycube"
+  exists: "{prefix}<white>Табло <white>{id}</white> уже есть. Выберите другой ID или перенесите его: <white>/rvb movehere {id}"
+
+movehere:
+  success: "{prefix}Табло <white>{id}</white> перенесено: <white>{world} {x} {y} {z}</white>."
+
+remove:
+  success: "{prefix}Табло <white>{id}</white> удалено."
+
+list:
+  empty: "{prefix}Табло пока нет."
+  header: "{prefix}Табло ({count}):"
+  entry: "<gray> • <white>{id}</white> <dark_gray>— <gray>{type}</gray>, {world} {x} {y} {z}"
+
+reload:
+  success: "{prefix}Конфиги перезагружены."
+  busy: "{prefix}<white>Перезагрузка уже идёт — подождите пару секунд и повторите."
+  failed: "{prefix}<white>Не удалось перезагрузить конфиги: файл и строка с ошибкой указаны в консоли. Исправьте и повторите <white>/rvb reload"
+
+edit:
+  info: |-
+    {prefix}Табло <white>{id}</white>:
+    <white> Вид: <white>{type}</white>, топы: <white>{tops}</white>
+    <white> Открывается на: <white>{default-top}</white>
+    <white> Место: <white>{world} {x} {y} {z}</white>, поворот <white>{yaw}°</white>, размер <white>{scale}</white>
+  help: |-
+    <white>Изменить: <white>/rvb edit {id}</white> и дальше:
+    <white> rotate <0–360> <dark_gray>— <white>повернуть на угол
+    <white> face <dark_gray>— <white>развернуть к себе
+    <white> scale <0.25–4> <dark_gray>— <white>размер табло
+    <white> move up|down|left|right|front|back <блоки> <dark_gray>— <white>сдвинуть (front — к зрителям)
+    <white> tp <dark_gray>— <white>телепорт к табло
+    <white> type <вид> <dark_gray>— <white>другой файл из папки tops
+    <white> default-top <топ> <dark_gray>— <white>какой топ открывается первым
+  rotated: "{prefix}Табло <white>{id}</white> повёрнуто: <white>{yaw}°"
+  scaled: "{prefix}Размер табло <white>{id}</white>: <white>{scale}"
+  moved: "{prefix}Табло <white>{id}</white> теперь на <white>{world} {x} {y} {z}"
+  teleported: "{prefix}Вы у табло <white>{id}"
+  world-not-loaded: "{prefix}<white>Мир <white>{world}</white> не загружен."
+  type: "{prefix}Табло <white>{id}</white> теперь вида <white>{type}</white>."
+  default-top: "{prefix}Табло <white>{id}</white> открывается на топе <white>{top}</white>."
+  top-missing: "{prefix}<white>Топа <white>{top}</white> нет на табло <white>{id}</white>. Какие есть: <white>/rvb edit {id}"
+  no-file: "<red>нет файла tops/{type}.yml"
+
+config-version: 1

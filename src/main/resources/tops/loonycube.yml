@@ -1,0 +1,124 @@
+tops:
+  balance:
+    board: vault_eco_balance
+    label: "Баланс"
+    title: "<gradient:#f59e5b:#f5c05b>Топ по монетам"
+    button-color: "#B3402709"
+    formats:
+      header-value: "<#a6a6a6>Баланс"
+      row-place: "<#f9ce5c>{place}"
+      row-value: "<#ebb857>{value} <#f5a05b>⛃"
+      empty-place: "<#f9ce5c>{place}"
+      empty-value: "<#ebb857>--- <#f5a05b>⛃"
+  time:
+    board: statistic_hours_played
+    label: "Время"
+    title: "<gradient:#2774f3:#a9a3f5>Топ по времени"
+    button-color: "#B3071A32"
+    formats:
+      header-value: "<#a6a6a6>Время"
+      row-place: "<#126ef8>{place}"
+      row-value: "<#1168eb>{value} <#fcfcfc>ч. <#126ef8>⌚"
+      empty-place: "<#126ef8>{place}"
+      empty-value: "<#1168eb>--- <#fcfcfc>ч. <#126ef8>⌚"
+  kills:
+    board: statistic_player_kills
+    label: "Убийства"
+    title: "<gradient:#f3306a:#f31e5a>Топ по убийствам"
+    button-color: "#B3360C0C"
+    formats:
+      header-value: "<#a6a6a6>Убийства"
+      row-place: "<#f74141>{place}"
+      row-value: "<#ea3e3e>{value} <#f84141>☠"
+      empty-place: "<#f74141>{place}"
+      empty-value: "<#ea3e3e>--- <#f84141>☠"
+
+periods:
+  - alltime
+period-names:
+  alltime: "Всё время"
+  yearly: "Год"
+  monthly: "Месяц"
+  weekly: "Неделя"
+  daily: "День"
+  hourly: "Час"
+
+formats:
+  subtitle: "<#8c8c8c>{period}"
+  header-place: "<#a6a6a6>№"
+  header-name: "<#a6a6a6>Игрок"
+  header-value: "<#a6a6a6>Значение"
+  row-place: "<white>{place}"
+  row-name: "{prefix}<#f0f0f0>{name}"
+  row-value: "<white>{value}"
+  empty-place: "<white>{place}"
+  empty-name: "<#f0f0f0>---"
+  empty-value: "<white>---"
+  personal-place: "<white>{position}"
+  personal-place-unranked: "<white>-"
+  personal-name: "<#f0f0f0>{name}"
+  personal-value: "<white>{value}"
+  button: "<white>{label}"
+  button-selected: "<white>{label}"
+  arrow-left: "<white>◀"
+  arrow-right: "<white>▶"
+  tab: "<gray>{period}"
+  tab-selected: "<white>{period}"
+
+table:
+  width: 5.5
+  rows: 15
+  text-scale: 1.0
+  title-scale: 1.0
+  personal-row: false
+  shadow: true
+  full-bright: true
+
+buttons:
+  enabled: true
+  visible: 3
+  arrows: true
+  height: 0.3
+  text-scale: 1.0
+  arrow-width: 0.2
+
+tabs:
+  enabled: false
+  height: 0.24
+  text-scale: 0.8
+
+columns:
+  place:
+    from: -2.75
+    to: -2.21
+    align: RIGHT
+  name:
+    from: -2.16
+    to: 1.51
+    align: CENTER
+  value:
+    from: 1.62
+    to: 2.75
+    align: RIGHT
+
+colors:
+  title: "#70000000"
+  header: "#80000000"
+  column: "#5A000000"
+  personal-row: "#5A000000"
+  button: "#66000000"
+  button-selected: "#B3402709"
+  arrow: "#66000000"
+  tab: "#40000000"
+  tab-selected: "#99000000"
+
+spacing:
+  padding: 0.1
+  title-height: 0.26
+  subtitle-height: 0.0
+  header-height: 0.31
+  gap: 0.03
+  cell-padding: 0.05
+  buttons-margin: 0.24
+  buttons-gap: 0.13
+  depth-step: 0.01

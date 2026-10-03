@@ -1,0 +1,9 @@
+name: rVisualBoards
+version: '1.0'
+main: ru.rulhot.rVisualBoards.RVisualBoards
+api-version: '1.21.4'
+load: POSTWORLD
+folia-supported: true
+depend: [PlaceholderAPI]
+softdepend: [ajLeaderboards]
+authors: [ Rulhot ]

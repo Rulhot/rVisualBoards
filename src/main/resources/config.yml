@@ -1,0 +1,66 @@
+update-interval-seconds: 10
+view-radius: 32.0
+snap-to-grid: true
+debug: false
+metrics: true
+
+command:
+  name: "rvb"
+  aliases:
+    - rvisualboards
+
+clicks:
+  cooldown-millis: 300
+  sound:
+    key: "minecraft:ui.button.click"
+    volume: 0.6
+    pitch: 1.4
+
+hover:
+  buttons: true
+  rows: true
+  scale: 1.15
+  row-scale: 1.1
+  distance: 6.0
+  duration-ticks: 3
+
+scroll:
+  enabled: true
+  max-places: 100
+  step: 1
+  distance: 8.0
+
+animation:
+  enabled: true
+  types:
+    - CASCADE
+  duration-ticks: 6
+  stagger-ticks: 1
+  distance: 0.6
+
+advanced:
+  viewer-check-interval-ticks: 20
+  hover-check-interval-ticks: 2
+  placeholders:
+    name: "%ajlb_lb_{board}_{place}_{type}_name%"
+    prefix: "%ajlb_lb_{board}_{place}_{type}_prefix%"
+    value: "%ajlb_lb_{board}_{place}_{type}_value%"
+    position: "%ajlb_position_{board}_{type}%"
+    personal-value: "%ajlb_value_{board}_{type}%"
+    empty-name: "---"
+  char-widths:
+    "☠": 9
+    "№": 9
+    "—": 9
+    "⛃": 9
+    "⌚": 9
+    "◀": 9
+    "▶": 9
+    "➜": 9
+    "✝": 9
+    "⛏": 9
+    "⚔": 9
+    "⚓": 9
+    "⇧": 9
+
+config-version: 1

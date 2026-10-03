@@ -1,0 +1,62 @@
+tops:
+  coins:
+    board: vault_eco_balance
+    title: "<#fb9f00>Топ по Монеткам"
+
+periods:
+  - alltime
+
+formats:
+  subtitle: "<#858585>Осень 2026"
+  header-place: "<#c8c8c8>№"
+  header-name: "<#c8c8c8>Ник"
+  header-value: "<#c8c8c8>Монеток"
+  row-place: "<#fb9f00>#{place}"
+  row-name: "<#fb7c12>{name}"
+  row-value: "<#fbc600>{value} <#fb9f00>¤"
+  empty-place: "<#fb9f00>#{place}"
+  empty-name: "<#fb7c12>---"
+  empty-value: "<#fbc600>--- <#fb9f00>¤"
+  personal-place: "<#fb9f00>#{position}"
+  personal-place-unranked: "<#fb9f00>-"
+  personal-name: "<#d0d0d0>{name}"
+  personal-value: "<#fbc600>{value} <#fb9f00>¤"
+
+table:
+  width: 6.3
+  rows: 10
+  text-scale: 1.0
+  title-scale: 1.6
+  personal-row: true
+  shadow: true
+  full-bright: true
+
+columns:
+  place:
+    from: -3.15
+    to: -2.55
+    align: LEFT
+  name:
+    from: -2.5
+    to: 0.05
+    align: CENTER
+  value:
+    from: 0.1
+    to: 3.15
+    align: LEFT
+
+colors:
+  title: "#00000000"
+  header: "#80000000"
+  column: "#26000000"
+  personal-row: "#26000000"
+
+spacing:
+  padding: 0.1
+  title-height: 0.45
+  subtitle-height: 0.28
+  header-height: 0.31
+  gap: 0.03
+  cell-padding: 0.08
+  buttons-margin: 0.2
+  depth-step: 0.01

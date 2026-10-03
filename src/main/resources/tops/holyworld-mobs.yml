@@ -1,0 +1,62 @@
+tops:
+  mobs:
+    board: statistic_mob_kills
+    title: "<#d02e32>Топ Убийц мобов"
+
+periods:
+  - alltime
+
+formats:
+  subtitle: "<#8a8a8a>Осень 2026"
+  header-place: "<#c8c8c8>№"
+  header-name: "<#c8c8c8>Ник"
+  header-value: "<#c8c8c8>Убито мобов"
+  row-place: "<#bd2b31>#{place}"
+  row-name: "<#ae1417>{name}"
+  row-value: "<#df6264>☠ {value}"
+  empty-place: "<#bd2b31>#{place}"
+  empty-name: "<#ae1417>---"
+  empty-value: "<#df6264>☠ ---"
+  personal-place: "<#bd2b31>#{position}"
+  personal-place-unranked: "<#bd2b31>-"
+  personal-name: "<#d0d0d0>{name}"
+  personal-value: "<#df6264>☠ {value}"
+
+table:
+  width: 6.3
+  rows: 10
+  text-scale: 1.0
+  title-scale: 1.6
+  personal-row: true
+  shadow: true
+  full-bright: true
+
+columns:
+  place:
+    from: -3.15
+    to: -2.55
+    align: LEFT
+  name:
+    from: -2.5
+    to: 0.05
+    align: CENTER
+  value:
+    from: 0.1
+    to: 3.15
+    align: LEFT
+
+colors:
+  title: "#00000000"
+  header: "#80000000"
+  column: "#26000000"
+  personal-row: "#26000000"
+
+spacing:
+  padding: 0.1
+  title-height: 0.45
+  subtitle-height: 0.28
+  header-height: 0.31
+  gap: 0.03
+  cell-padding: 0.08
+  buttons-margin: 0.2
+  depth-step: 0.01
