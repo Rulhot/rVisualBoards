@@ -15,7 +15,7 @@ import ru.rulhot.rVisualBoards.command.sub.RemoveSubCommand;
 import ru.rulhot.rVisualBoards.hologram.HologramKeys;
 import ru.rulhot.rVisualBoards.listener.HologramInteractListener;
 import ru.rulhot.rVisualBoards.listener.HologramScrollListener;
-import ru.rulhot.rVisualBoards.listener.PlayerQuitListener;
+import ru.rulhot.rVisualBoards.listener.ViewerListener;
 import ru.rulhot.rVisualBoards.listener.WorldListener;
 import ru.rulhot.rVisualBoards.manager.ConfigManager;
 import ru.rulhot.rVisualBoards.manager.HologramManager;
@@ -56,7 +56,7 @@ public final class RVisualBoards extends JavaPlugin {
         PluginManager pluginManager = getServer().getPluginManager();
         pluginManager.registerEvents(new HologramInteractListener(keys, holograms), this);
         pluginManager.registerEvents(new HologramScrollListener(holograms), this);
-        pluginManager.registerEvents(new PlayerQuitListener(holograms), this);
+        pluginManager.registerEvents(new ViewerListener(holograms), this);
         pluginManager.registerEvents(new WorldListener(holograms), this);
 
         BoardCommand command = new BoardCommand(config, List.of(

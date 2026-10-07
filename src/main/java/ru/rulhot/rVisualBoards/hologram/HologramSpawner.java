@@ -1,8 +1,9 @@
 package ru.rulhot.rVisualBoards.hologram;
 
+import com.github.retrooper.packetevents.protocol.entity.data.EntityData;
+import com.github.retrooper.packetevents.protocol.player.User;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Color;
-import org.bukkit.entity.Display;
 import org.bukkit.entity.Interaction;
 import org.bukkit.entity.TextDisplay;
 import org.bukkit.persistence.PersistentDataContainer;
@@ -30,7 +31,6 @@ final class HologramSpawner {
     private static final @NotNull String SPACE = " ";
     private static final @NotNull String LINE_BREAK = "\n";
     private static final @NotNull Color TRANSPARENT = Color.fromARGB(0, 0, 0, 0);
-    private static final @NotNull Display.Brightness FULL_BRIGHT = new Display.Brightness(MAX_LIGHT, MAX_LIGHT);
 
     private final @NotNull HologramContext context;
     private final @NotNull String boardId;
@@ -57,19 +57,20 @@ final class HologramSpawner {
         this.spacing = context.layout().spacing();
     }
 
-    @NotNull HologramView spawnView(@NotNull UUID viewerId, @NotNull String topId, @NotNull Period period) {
+    @NotNull HologramView spawnView(@NotNull User viewer, @NotNull UUID viewerId, @NotNull String topId,
+                                    @NotNull Period period) {
         double textDepth = textDepth();
         List<Group> groups = new ArrayList<>();
 
         List<HologramPart> titleParts = new ArrayList<>();
-        addPanel(titleParts, 0D, geometry.titleBottom(), 0D, table.width(), spacing.titleHeight(), colors.title());
-        HologramPart title = text(0D,
+        addPanel(viewer, titleParts, 0D, geometry.titleBottom(), 0D, table.width(), spacing.titleHeight(), colors.title());
+        HologramPart title = text(viewer, 0D,
                 BoardGeometry.textBottom(geometry.titleBottom(), spacing.titleHeight(), table.titleScale()),
                 textDepth, table.titleScale(), TextDisplay.TextAlignment.CENTER);
         titleParts.add(title);
         HologramPart subtitle = null;
         if (spacing.subtitleHeight() > 0D) {
-            subtitle = text(0D, BoardGeometry.textBottom(geometry.titleBottom() - spacing.subtitleHeight(),
+            subtitle = text(viewer, 0D, BoardGeometry.textBottom(geometry.titleBottom() - spacing.subtitleHeight(),
                     spacing.subtitleHeight(), table.textScale()), textDepth, table.textScale(),
                     TextDisplay.TextAlignment.CENTER);
             titleParts.add(subtitle);
@@ -82,11 +83,11 @@ final class HologramSpawner {
         List<HologramPart> headerParts = new ArrayList<>();
         List<HologramPart> columnParts = new ArrayList<>();
         for (Column column : columns) {
-            addPanel(headerParts, column.center(), geometry.headerBottom(), 0D, column.width(),
+            addPanel(viewer, headerParts, column.center(), geometry.headerBottom(), 0D, column.width(),
                     spacing.headerHeight(), colors.header());
-            addPanel(columnParts, column.center(), geometry.tableBottom(), 0D, column.width(),
+            addPanel(viewer, columnParts, column.center(), geometry.tableBottom(), 0D, column.width(),
                     geometry.tableTop() - geometry.tableBottom(), colors.column());
-            HologramPart header = text(column.center(), headerTextBottom, textDepth, table.textScale(),
+            HologramPart header = text(viewer, column.center(), headerTextBottom, textDepth, table.textScale(),
                     TextDisplay.TextAlignment.CENTER);
             headers.add(header);
             headerParts.add(header);
@@ -96,24 +97,25 @@ final class HologramSpawner {
 
         List<List<Cell>> rows = new ArrayList<>();
         for (int slot = 1; slot <= geometry.rows(); slot++) {
-            List<Cell> row = cells(geometry.rowBottom(slot));
+            List<Cell> row = cells(viewer, geometry.rowBottom(slot));
             rows.add(row);
             groups.add(new Group(GroupKind.ROW, slot, parts(row)));
         }
 
         List<Cell> standing = List.of();
         if (table.personalRow()) {
-            standing = cells(geometry.standingBottom());
+            standing = cells(viewer, geometry.standingBottom());
             List<HologramPart> standingParts = new ArrayList<>();
             for (Column column : columns) {
-                addPanel(standingParts, column.center(), geometry.standingBottom() - spacing.gap(), 0D,
+                addPanel(viewer, standingParts, column.center(), geometry.standingBottom() - spacing.gap(), 0D,
                         column.width(), geometry.line() + spacing.gap() * 2D, colors.personalRow());
             }
             standingParts.addAll(parts(standing));
             groups.add(new Group(GroupKind.STANDING, 0, List.copyOf(standingParts)));
         }
 
-        return new HologramView(viewerId, topId, period, title, subtitle, headers, rows, standing, spawnButtons(), groups);
+        return new HologramView(viewer, viewerId, topId, period, title, subtitle, headers, rows, standing,
+                spawnButtons(viewer), groups);
     }
 
     @NotNull List<Interaction> spawnHitboxes() {
@@ -124,10 +126,10 @@ final class HologramSpawner {
         return hitboxes;
     }
 
-    private @NotNull List<Button> spawnButtons() {
+    private @NotNull List<Button> spawnButtons(@NotNull User viewer) {
         List<Button> result = new ArrayList<>();
         for (int index = 0; index < geometry.boxCount(); index++) {
-            result.add(button(actionAt(index), geometry.box(index)));
+            result.add(button(viewer, actionAt(index), geometry.box(index)));
         }
         return result;
     }
@@ -143,23 +145,24 @@ final class HologramSpawner {
         return new ButtonAction.PeriodTab(arrow - geometry.arrowCount());
     }
 
-    private @NotNull Button button(@NotNull ButtonAction action, @NotNull BoardGeometry.Box box) {
+    private @NotNull Button button(@NotNull User viewer, @NotNull ButtonAction action,
+                                   @NotNull BoardGeometry.Box box) {
         Color fill = switch (action) {
             case ButtonAction.Slot slot -> colors.button();
             case ButtonAction.Cycle cycle -> colors.arrow();
             case ButtonAction.PeriodTab tab -> colors.tab();
         };
         double scale = action instanceof ButtonAction.PeriodTab ? tabs.textScale() : buttons.textScale();
-        HologramPart panel = panel(box.x(), box.bottom(), spacing.depthStep(), box.width(), box.height(), fill);
+        HologramPart panel = panel(viewer, box.x(), box.bottom(), spacing.depthStep(), box.width(), box.height(), fill);
         double labelBottom = BoardGeometry.textBottom(box.bottom(), box.height(), scale);
-        HologramPart label = text(box.x(), labelBottom, textDepth(), scale, TextDisplay.TextAlignment.CENTER);
+        HologramPart label = text(viewer, box.x(), labelBottom, textDepth(), scale, TextDisplay.TextAlignment.CENTER);
         return new Button(action, box, panel, label);
     }
 
-    private @NotNull List<Cell> cells(double bottom) {
+    private @NotNull List<Cell> cells(@NotNull User viewer, double bottom) {
         List<Cell> row = new ArrayList<>();
         for (Column column : columns) {
-            row.add(new Cell(text(column.center(), bottom, textDepth(), table.textScale(), column.align())));
+            row.add(new Cell(text(viewer, column.center(), bottom, textDepth(), table.textScale(), column.align())));
         }
         return List.copyOf(row);
     }
@@ -172,40 +175,35 @@ final class HologramSpawner {
         return spacing.depthStep() * 2D;
     }
 
-    private @NotNull HologramPart text(double x, double y, double depth, double scale,
+    private @NotNull HologramPart text(@NotNull User viewer, double x, double y, double depth, double scale,
                                        @NotNull TextDisplay.TextAlignment alignment) {
-        TextDisplay display = frame.world().spawn(frame.point(x, y, depth), TextDisplay.class, spawned -> {
-            prepareText(spawned);
-            spawned.setAlignment(alignment);
-            spawned.setShadowed(table.shadow());
-            spawned.setBackgroundColor(TRANSPARENT);
-        });
+        List<EntityData<?>> state = baseState(table.shadow(), alignment);
+        state.add(PacketDisplay.background(TRANSPARENT));
+        PacketDisplay display = new PacketDisplay(viewer, frame.point(x, y, depth), state);
         float size = (float) (scale * frame.scale());
         HologramPart part = new HologramPart(display, size, size, size, BoardGeometry.LINE * size, null);
         part.apply(0);
         return part;
     }
 
-    private void addPanel(@NotNull List<HologramPart> sink, double x, double y, double depth,
+    private void addPanel(@NotNull User viewer, @NotNull List<HologramPart> sink, double x, double y, double depth,
                           double width, double height, @NotNull Color color) {
         if (color.getAlpha() != 0) {
-            sink.add(panel(x, y, depth, width, height, color));
+            sink.add(panel(viewer, x, y, depth, width, height, color));
         }
     }
 
-    private @NotNull HologramPart panel(double x, double y, double depth, double width, double height,
-                                        @NotNull Color color) {
+    private @NotNull HologramPart panel(@NotNull User viewer, double x, double y, double depth, double width,
+                                        double height, @NotNull Color color) {
         int spaces = Math.max(1, (int) Math.round((width / BoardGeometry.PIXEL - 1D) / SPACE_PIXELS));
         int lines = Math.max(1, (int) Math.round((height / BoardGeometry.PIXEL - 1D) / BoardGeometry.LINE_PIXELS));
         double scale = frame.scale();
         float scaleX = (float) (width * scale / ((spaces * SPACE_PIXELS + 1D) * BoardGeometry.PIXEL));
         float scaleY = (float) (height * scale / ((lines * BoardGeometry.LINE_PIXELS + 1D) * BoardGeometry.PIXEL));
         Component filler = Component.text(String.join(LINE_BREAK, Collections.nCopies(lines, SPACE.repeat(spaces))));
-        TextDisplay display = frame.world().spawn(frame.point(x, y, depth), TextDisplay.class, spawned -> {
-            prepareText(spawned);
-            spawned.text(filler);
-            spawned.setShadowed(false);
-        });
+        List<EntityData<?>> state = baseState(false, TextDisplay.TextAlignment.CENTER);
+        state.add(PacketDisplay.text(filler));
+        PacketDisplay display = new PacketDisplay(viewer, frame.point(x, y, depth), state);
         HologramPart part = new HologramPart(display, scaleX, scaleY, 1F, height * scale, color);
         part.apply(0);
         return part;
@@ -225,17 +223,14 @@ final class HologramSpawner {
         });
     }
 
-    private void prepareText(@NotNull TextDisplay display) {
-        display.setLineWidth(LINE_WIDTH);
-        display.setDefaultBackground(false);
-        display.setSeeThrough(false);
-        display.setPersistent(false);
-        display.setVisibleByDefault(false);
-        display.setBillboard(Display.Billboard.FIXED);
-        display.setViewRange((float) (context.settings().viewRadius() / VANILLA_VIEW_DISTANCE));
+    private @NotNull List<EntityData<?>> baseState(boolean shadowed, @NotNull TextDisplay.TextAlignment alignment) {
+        List<EntityData<?>> state = new ArrayList<>();
+        state.add(PacketDisplay.lineWidth(LINE_WIDTH));
+        state.add(PacketDisplay.flags(shadowed, alignment));
+        state.add(PacketDisplay.viewRange((float) (context.settings().viewRadius() / VANILLA_VIEW_DISTANCE)));
         if (table.fullBright()) {
-            display.setBrightness(FULL_BRIGHT);
+            state.add(PacketDisplay.brightness(MAX_LIGHT, MAX_LIGHT));
         }
-        display.getPersistentDataContainer().set(context.keys().board(), PersistentDataType.STRING, boardId);
+        return state;
     }
 }

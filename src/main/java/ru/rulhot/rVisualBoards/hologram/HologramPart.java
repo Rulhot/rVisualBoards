@@ -2,19 +2,18 @@ package ru.rulhot.rVisualBoards.hologram;
 
 import net.kyori.adventure.text.Component;
 import org.bukkit.Color;
-import org.bukkit.entity.TextDisplay;
-import org.bukkit.util.Transformation;
+import org.bukkit.Location;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.joml.AxisAngle4f;
-import org.joml.Vector3f;
+
+import java.util.List;
 
 final class HologramPart {
 
     private static final byte FADED_OPACITY = 5;
     private static final byte FULL_OPACITY = -1;
 
-    private final @NotNull TextDisplay display;
+    private final @NotNull PacketDisplay display;
     private final double height;
     private float scaleX;
     private float scaleY;
@@ -24,7 +23,7 @@ final class HologramPart {
     private double zoom = 1D;
     private boolean faded;
 
-    HologramPart(@NotNull TextDisplay display, float scaleX, float scaleY, float scaleZ, double height,
+    HologramPart(@NotNull PacketDisplay display, float scaleX, float scaleY, float scaleZ, double height,
                  @Nullable Color background) {
         this.display = display;
         this.scaleX = scaleX;
@@ -34,17 +33,21 @@ final class HologramPart {
         this.background = background;
     }
 
-    @NotNull TextDisplay display() {
-        return display;
+    int entityId() {
+        return display.entityId();
     }
 
     void text(@NotNull Component text) {
-        display.text(text);
+        display.send(List.of(PacketDisplay.text(text)));
+    }
+
+    void moveTo(@NotNull Location location) {
+        display.teleport(location);
     }
 
     void recolor(@NotNull Color color) {
         background = color;
-        display.setBackgroundColor(color);
+        display.send(List.of(PacketDisplay.background(color)));
     }
 
     boolean rescale(float scale) {
@@ -76,22 +79,18 @@ final class HologramPart {
     }
 
     void apply(int durationTicks) {
-        display.setInterpolationDelay(0);
-        display.setInterpolationDuration(durationTicks);
         float factor = (float) zoom;
         float lift = (float) (-(zoom - 1D) * height / 2D);
-        display.setTransformation(new Transformation(
-                new Vector3f((float) offsetX, lift, 0F),
-                new AxisAngle4f(),
-                new Vector3f(scaleX * factor, scaleY * factor, scaleZ),
-                new AxisAngle4f()));
         Color current = background;
-        if (current != null) {
-            display.setBackgroundColor(faded
-                    ? Color.fromARGB(0, current.getRed(), current.getGreen(), current.getBlue())
-                    : current);
-            return;
-        }
-        display.setTextOpacity(faded ? FADED_OPACITY : FULL_OPACITY);
+        display.send(List.of(
+                PacketDisplay.interpolationDelay(0),
+                PacketDisplay.interpolationDuration(durationTicks),
+                PacketDisplay.translation((float) offsetX, lift, 0F),
+                PacketDisplay.scale(scaleX * factor, scaleY * factor, scaleZ),
+                current == null
+                        ? PacketDisplay.opacity(faded ? FADED_OPACITY : FULL_OPACITY)
+                        : PacketDisplay.background(faded
+                        ? Color.fromARGB(0, current.getRed(), current.getGreen(), current.getBlue())
+                        : current)));
     }
 }

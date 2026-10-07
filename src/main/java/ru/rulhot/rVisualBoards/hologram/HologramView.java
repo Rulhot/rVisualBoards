@@ -1,16 +1,17 @@
 package ru.rulhot.rVisualBoards.hologram;
 
+import com.github.retrooper.packetevents.protocol.player.User;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerDestroyEntities;
 import net.kyori.adventure.text.Component;
-import org.bukkit.entity.Entity;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import ru.rulhot.rVisualBoards.model.LeaderboardSnapshot.Key;
 import ru.rulhot.rVisualBoards.model.LeaderboardSnapshot.Standing;
 import ru.rulhot.rVisualBoards.model.TopDefinition.Period;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Stream;
 import java.util.concurrent.atomic.AtomicInteger;
 
 final class HologramView {
@@ -18,6 +19,7 @@ final class HologramView {
     private static final long MILLIS_PER_TICK = 50L;
     private static final long BUSY_MARGIN_TICKS = 2L;
 
+    private final @NotNull User viewer;
     private final @NotNull UUID viewerId;
     private final @NotNull HologramPart title;
     private final @Nullable HologramPart subtitle;
@@ -26,7 +28,7 @@ final class HologramView {
     private final @NotNull List<Cell> standing;
     private final @NotNull List<Button> buttons;
     private final @NotNull List<Group> groups;
-    private final @NotNull List<Entity> entities;
+    private final int @NotNull [] entityIds;
     private final @NotNull AtomicInteger generation = new AtomicInteger();
 
     private volatile @NotNull String topId;
@@ -43,9 +45,11 @@ final class HologramView {
     private int hoveredButton = BoardGeometry.NO_BUTTON;
     private int hoveredRow = BoardGeometry.NO_ROW;
 
-    HologramView(@NotNull UUID viewerId, @NotNull String topId, @NotNull Period period, @NotNull HologramPart title,
-                 @Nullable HologramPart subtitle, @NotNull List<HologramPart> headers, @NotNull List<List<Cell>> rows, @NotNull List<Cell> standing,
-                 @NotNull List<Button> buttons, @NotNull List<Group> groups) {
+    HologramView(@NotNull User viewer, @NotNull UUID viewerId, @NotNull String topId, @NotNull Period period,
+                 @NotNull HologramPart title, @Nullable HologramPart subtitle, @NotNull List<HologramPart> headers,
+                 @NotNull List<List<Cell>> rows, @NotNull List<Cell> standing, @NotNull List<Button> buttons,
+                 @NotNull List<Group> groups) {
+        this.viewer = viewer;
         this.viewerId = viewerId;
         this.topId = topId;
         this.period = period;
@@ -56,18 +60,11 @@ final class HologramView {
         this.standing = List.copyOf(standing);
         this.buttons = List.copyOf(buttons);
         this.groups = List.copyOf(groups);
-        List<Entity> all = new ArrayList<>();
-        for (Group group : groups) {
-            for (HologramPart part : group.parts()) {
-                all.add(part.display());
-            }
-        }
-        for (Button button : buttons) {
-            for (HologramPart part : button.parts()) {
-                all.add(part.display());
-            }
-        }
-        this.entities = List.copyOf(all);
+        this.entityIds = Stream.concat(
+                        groups.stream().flatMap(group -> group.parts().stream()),
+                        buttons.stream().flatMap(button -> button.parts().stream()))
+                .mapToInt(HologramPart::entityId)
+                .toArray();
     }
 
     @NotNull UUID viewerId() {
@@ -115,17 +112,9 @@ final class HologramView {
         return groups;
     }
 
-    @NotNull List<Entity> entities() {
-        return entities;
-    }
-
-    boolean intact() {
-        for (Entity entity : entities) {
-            if (!entity.isValid()) {
-                return false;
-            }
-        }
-        return true;
+    void destroy() {
+        detach();
+        viewer.sendPacket(new WrapperPlayServerDestroyEntities(entityIds));
     }
 
     int nextGeneration() {
@@ -240,7 +229,7 @@ final class HologramView {
         }
 
         boolean show(@NotNull Component text) {
-            if (text == shown) {
+            if (text.equals(shown)) {
                 return false;
             }
             shown = text;

@@ -159,6 +159,12 @@ public final class HologramManager {
         leaderboards.forget(viewerId);
     }
 
+    public void resend(@NotNull UUID viewerId) {
+        for (BoardHologram hologram : holograms.values()) {
+            hologram.forget(viewerId);
+        }
+    }
+
     private void spawn(@NotNull Settings current, @NotNull PlacedBoard board) {
         World world = Bukkit.getWorld(board.world());
         if (world == null) {

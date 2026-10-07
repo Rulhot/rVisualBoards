@@ -1,5 +1,7 @@
 package ru.rulhot.rVisualBoards.hologram;
 
+import com.github.retrooper.packetevents.PacketEvents;
+import com.github.retrooper.packetevents.protocol.player.User;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -32,6 +34,8 @@ public final class BoardHologram {
     private static final double ORPHAN_MARGIN = 1D;
     private static final long FIRST_TICK_DELAY = 1L;
     private static final double NORMAL_ZOOM = 1D;
+    private static final int MAX_NEW_VIEWS_PER_TICK = 3;
+    private static final long CATCH_UP_DELAY_TICKS = 1L;
 
     private final @NotNull HologramContext context;
     private final @NotNull PlacedBoard board;
@@ -52,6 +56,7 @@ public final class BoardHologram {
     private volatile @Nullable SchedulerUtil.Task hoverTask;
     private volatile boolean stopped;
     private boolean spawned;
+    private boolean catchingUp;
 
     public BoardHologram(@NotNull HologramContext context, @NotNull PlacedBoard board, @NotNull World world,
                          @NotNull List<TopDefinition> tops) {
@@ -104,9 +109,9 @@ public final class BoardHologram {
 
     public void shutdown() {
         markStopped();
-        for (Entity entity : trackedEntities()) {
-            if (Bukkit.isOwnedByCurrentRegion(entity)) {
-                removeEntity(entity);
+        for (Interaction hitbox : hitboxes) {
+            if (Bukkit.isOwnedByCurrentRegion(hitbox)) {
+                removeEntity(hitbox);
             }
         }
         clearState();
@@ -259,19 +264,33 @@ public final class BoardHologram {
     private void updateViews() {
         double radius = context.settings().viewRadius();
         double radiusSquared = radius * radius;
+        double keepRadius = radius + KEEP_MARGIN;
+        int created = 0;
+        boolean pending = false;
         Set<UUID> present = new HashSet<>();
-        for (Player player : origin.getNearbyPlayers(radius + KEEP_MARGIN)) {
+        for (Player player : frame.world().getPlayers()) {
+            Location position = player.getLocation(viewerPosition);
+            double deltaX = position.getX() - origin.getX();
+            double deltaY = position.getY() - origin.getY();
+            double deltaZ = position.getZ() - origin.getZ();
+            if (Math.abs(deltaX) > keepRadius || Math.abs(deltaY) > keepRadius || Math.abs(deltaZ) > keepRadius) {
+                continue;
+            }
             UUID viewerId = player.getUniqueId();
             HologramView view = views.get(viewerId);
-            if (view != null && !view.intact()) {
-                removeView(viewerId);
-                view = null;
-            }
             if (view == null) {
-                if (player.getLocation().distanceSquared(origin) > radiusSquared) {
+                if (deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ > radiusSquared) {
+                    continue;
+                }
+                if (created >= MAX_NEW_VIEWS_PER_TICK) {
+                    pending = true;
                     continue;
                 }
                 view = createView(player);
+                if (view == null) {
+                    continue;
+                }
+                created++;
             }
             present.add(viewerId);
             TopDefinition top = topsById.get(view.topId());
@@ -292,9 +311,22 @@ public final class BoardHologram {
                 removeView(viewerId);
             }
         }
+        if (pending && !catchingUp) {
+            catchingUp = true;
+            context.scheduler().runAtLater(origin, this::catchUp, CATCH_UP_DELAY_TICKS);
+        }
     }
 
-    private @NotNull HologramView createView(@NotNull Player player) {
+    private void catchUp() {
+        catchingUp = false;
+        tick();
+    }
+
+    private @Nullable HologramView createView(@NotNull Player player) {
+        User viewer = PacketEvents.getAPI().getPlayerManager().getUser(player);
+        if (viewer == null) {
+            return null;
+        }
         UUID viewerId = player.getUniqueId();
         TopSelections.Selection remembered = context.selections().get(viewerId, board.id());
         TopDefinition top = remembered == null ? null : topsById.get(remembered.topId());
@@ -302,7 +334,7 @@ public final class BoardHologram {
             top = defaultTop();
         }
         Period period = remembered == null ? top.defaultPeriod() : top.periodOr(remembered.period());
-        HologramView view = spawner.spawnView(viewerId, top.id(), period);
+        HologramView view = spawner.spawnView(viewer, viewerId, top.id(), period);
         views.put(viewerId, view);
         context.leaderboards().request(top.board(), period);
         renderer.renderButtons(view, top);
@@ -311,12 +343,6 @@ public final class BoardHologram {
             context.leaderboards().fetchStanding(viewerId, player.getName(), top.board(), period)
                     .whenComplete((ignored, error) -> refreshStanding(viewerId));
         }
-        List<Entity> entities = view.entities();
-        context.scheduler().runFor(player, () -> {
-            for (Entity entity : entities) {
-                player.showEntity(context.plugin(), entity);
-            }
-        });
         return view;
     }
 
@@ -403,32 +429,21 @@ public final class BoardHologram {
         if (view == null) {
             return;
         }
-        view.detach();
-        for (Entity entity : view.entities()) {
-            removeEntity(entity);
-        }
+        view.destroy();
     }
 
     private void despawnAll() {
-        for (Entity entity : trackedEntities()) {
-            removeEntity(entity);
+        for (Interaction hitbox : hitboxes) {
+            removeEntity(hitbox);
         }
         clearState();
-    }
-
-    private @NotNull List<Entity> trackedEntities() {
-        List<Entity> entities = new ArrayList<>(hitboxes);
-        for (HologramView view : views.values()) {
-            entities.addAll(view.entities());
-        }
-        return entities;
     }
 
     private void clearState() {
         spawned = false;
         hitboxes.clear();
         for (HologramView view : views.values()) {
-            view.detach();
+            view.destroy();
         }
         views.clear();
     }

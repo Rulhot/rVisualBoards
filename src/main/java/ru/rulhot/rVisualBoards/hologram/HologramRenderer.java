@@ -224,7 +224,7 @@ final class HologramRenderer {
         }
         label.apply(0);
         BoardGeometry.Box box = button.box();
-        label.display().teleportAsync(frame.point(box.x(), BoardGeometry.textBottom(box.bottom(), box.height(), scale),
+        label.moveTo(frame.point(box.x(), BoardGeometry.textBottom(box.bottom(), box.height(), scale),
                 textDepth()));
     }
 
@@ -315,7 +315,7 @@ final class HologramRenderer {
         };
         double y = bottom + (BoardGeometry.LINE * baseScale - BoardGeometry.LINE * scale) / 2D;
         if (cell.moveTo(x, y)) {
-            part.display().teleportAsync(frame.point(x, y, textDepth()));
+            part.moveTo(frame.point(x, y, textDepth()));
         }
     }
 
