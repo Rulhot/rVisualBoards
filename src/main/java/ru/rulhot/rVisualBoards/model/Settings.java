@@ -165,6 +165,7 @@ public record Settings(
 
     public record Animation(
             boolean enabled,
+            boolean appear,
             @NotNull List<AnimationType> types,
             int durationTicks,
             int staggerTicks,
@@ -172,12 +173,14 @@ public record Settings(
     ) {
 
         public static final @NotNull String ENABLED = "animation.enabled";
+        public static final @NotNull String APPEAR = "animation.appear";
         public static final @NotNull String TYPES = "animation.types";
         public static final @NotNull String DURATION = "animation.duration-ticks";
         public static final @NotNull String STAGGER = "animation.stagger-ticks";
         public static final @NotNull String DISTANCE = "animation.distance";
 
         public static final boolean DEFAULT_ENABLED = true;
+        public static final boolean DEFAULT_APPEAR = true;
         public static final @NotNull List<AnimationType> DEFAULT_TYPES = List.of(AnimationType.CASCADE);
         public static final int DEFAULT_DURATION = 6;
         public static final int DEFAULT_STAGGER = 1;

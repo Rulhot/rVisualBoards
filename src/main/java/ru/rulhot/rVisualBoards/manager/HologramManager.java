@@ -11,6 +11,7 @@ import org.jetbrains.annotations.Nullable;
 import ru.rulhot.rVisualBoards.hologram.BoardHologram;
 import ru.rulhot.rVisualBoards.hologram.ButtonAction;
 import ru.rulhot.rVisualBoards.hologram.FontMetrics;
+import ru.rulhot.rVisualBoards.hologram.HitboxRegistry;
 import ru.rulhot.rVisualBoards.hologram.HologramContext;
 import ru.rulhot.rVisualBoards.hologram.HologramKeys;
 import ru.rulhot.rVisualBoards.hologram.TopSelections;
@@ -39,6 +40,7 @@ public final class HologramManager {
     private final @NotNull BoardRepository boards;
 
     private final @NotNull TopSelections selections = new TopSelections();
+    private final @NotNull HitboxRegistry hitboxes = new HitboxRegistry();
     private final @NotNull Map<String, BoardHologram> holograms = new ConcurrentHashMap<>();
     private final @NotNull Map<UUID, Long> lastClicks = new ConcurrentHashMap<>();
 
@@ -74,6 +76,11 @@ public final class HologramManager {
         holograms.clear();
         lastClicks.clear();
         selections.clear();
+        hitboxes.clear();
+    }
+
+    public @NotNull HitboxRegistry hitboxes() {
+        return hitboxes;
     }
 
     public int size() {
@@ -178,7 +185,7 @@ public final class HologramManager {
             return;
         }
         HologramContext context = new HologramContext(plugin, scheduler, keys, selections, leaderboards, current,
-                type.layout(), new FontMetrics(current.advanced().charWidths()));
+                type.layout(), new FontMetrics(current.advanced().charWidths()), hitboxes);
         BoardHologram hologram = new BoardHologram(context, board, world, type.tops());
         BoardHologram previous = holograms.put(board.id(), hologram);
         if (previous != null) {

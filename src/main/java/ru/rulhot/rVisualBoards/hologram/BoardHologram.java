@@ -6,7 +6,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
-import org.bukkit.entity.Interaction;
 import org.bukkit.entity.Player;
 import org.bukkit.persistence.PersistentDataType;
 import org.jetbrains.annotations.NotNull;
@@ -19,7 +18,6 @@ import ru.rulhot.rVisualBoards.model.TopDefinition;
 import ru.rulhot.rVisualBoards.model.TopDefinition.Period;
 import ru.rulhot.rVisualBoards.util.SchedulerUtil;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -48,7 +46,6 @@ public final class BoardHologram {
     private final @NotNull HologramRenderer renderer;
     private final @NotNull SwitchAnimator animator;
 
-    private final @NotNull List<Interaction> hitboxes = new ArrayList<>();
     private final @NotNull Map<UUID, HologramView> views = new ConcurrentHashMap<>();
     private final @NotNull Location viewerPosition = new Location(null, 0D, 0D, 0D);
 
@@ -72,8 +69,8 @@ public final class BoardHologram {
         this.origin = frame.origin();
         int periodCount = this.tops.stream().mapToInt(top -> top.periods().size()).max().orElse(0);
         this.geometry = BoardGeometry.of(context.layout(), this.tops.size(), periodCount);
-        this.spawner = new HologramSpawner(context, board.id(), frame, geometry);
-        this.renderer = new HologramRenderer(context, frame, geometry, this.tops);
+        this.spawner = new HologramSpawner(context, board.id(), geometry);
+        this.renderer = new HologramRenderer(context, geometry, this.tops);
         this.animator = new SwitchAnimator(context, origin, renderer, frame.scale());
     }
 
@@ -109,11 +106,6 @@ public final class BoardHologram {
 
     public void shutdown() {
         markStopped();
-        for (Interaction hitbox : hitboxes) {
-            if (Bukkit.isOwnedByCurrentRegion(hitbox)) {
-                removeEntity(hitbox);
-            }
-        }
         clearState();
     }
 
@@ -146,7 +138,7 @@ public final class BoardHologram {
         HologramView view = views.get(player.getUniqueId());
         TopDefinition top = view == null ? null : topsById.get(view.topId());
         if (stopped || top == null || view.isAnimating() || !renderer.canScroll(view, top, delta)
-                || !isLookingAtRows(player, context.settings().scroll().distance())) {
+                || !isLookingAtRows(player, view.frame(), context.settings().scroll().distance())) {
             return false;
         }
         context.scheduler().runAt(origin, () -> scrollView(view, delta));
@@ -229,12 +221,12 @@ public final class BoardHologram {
         renderer.scroll(view, top, delta);
     }
 
-    private boolean isLookingAtRows(@NotNull Player player, double maxDistance) {
+    private boolean isLookingAtRows(@NotNull Player player, @NotNull BoardFrame viewFrame, double maxDistance) {
         Location eye = player.getEyeLocation();
         if (!frame.world().equals(eye.getWorld())) {
             return false;
         }
-        BoardFrame.Point point = frame.project(eye.getX(), eye.getY(), eye.getZ(), eye.getYaw(), eye.getPitch(),
+        BoardFrame.Point point = viewFrame.project(eye.getX(), eye.getY(), eye.getZ(), eye.getYaw(), eye.getPitch(),
                 maxDistance);
         return point != null && geometry.isOnRows(point.x(), point.y());
     }
@@ -243,22 +235,11 @@ public final class BoardHologram {
         if (stopped || !frame.isLoaded()) {
             return;
         }
-        if (!spawned || !hitboxesIntact()) {
-            despawnAll();
+        if (!spawned) {
             removeOrphans();
-            hitboxes.addAll(spawner.spawnHitboxes());
             spawned = true;
         }
         updateViews();
-    }
-
-    private boolean hitboxesIntact() {
-        for (Interaction hitbox : hitboxes) {
-            if (!hitbox.isValid()) {
-                return false;
-            }
-        }
-        return true;
     }
 
     private void updateViews() {
@@ -268,7 +249,7 @@ public final class BoardHologram {
         int created = 0;
         boolean pending = false;
         Set<UUID> present = new HashSet<>();
-        for (Player player : frame.world().getPlayers()) {
+        for (Player player : origin.getNearbyPlayers(keepRadius)) {
             Location position = player.getLocation(viewerPosition);
             double deltaX = position.getX() - origin.getX();
             double deltaY = position.getY() - origin.getY();
@@ -334,7 +315,7 @@ public final class BoardHologram {
             top = defaultTop();
         }
         Period period = remembered == null ? top.defaultPeriod() : top.periodOr(remembered.period());
-        HologramView view = spawner.spawnView(viewer, viewerId, top.id(), period);
+        HologramView view = spawner.spawnView(viewer, frame, viewerId, top.id(), period);
         views.put(viewerId, view);
         context.leaderboards().request(top.board(), period);
         renderer.renderButtons(view, top);
@@ -343,6 +324,7 @@ public final class BoardHologram {
             context.leaderboards().fetchStanding(viewerId, player.getName(), top.board(), period)
                     .whenComplete((ignored, error) -> refreshStanding(viewerId));
         }
+        animator.appear(view);
         return view;
     }
 
@@ -358,7 +340,7 @@ public final class BoardHologram {
         }
         Settings.Hover hover = context.settings().hover();
         for (HologramView view : views.values()) {
-            BoardFrame.Point point = lookPoint(view.viewerId(), hover.distance());
+            BoardFrame.Point point = lookPoint(view, hover.distance());
             int button = point == null || !hover.buttons()
                     ? BoardGeometry.NO_BUTTON
                     : geometry.buttonAt(point.x(), point.y());
@@ -382,13 +364,13 @@ public final class BoardHologram {
         }
     }
 
-    private @Nullable BoardFrame.Point lookPoint(@NotNull UUID viewerId, double maxDistance) {
-        Player player = Bukkit.getPlayer(viewerId);
+    private @Nullable BoardFrame.Point lookPoint(@NotNull HologramView view, double maxDistance) {
+        Player player = Bukkit.getPlayer(view.viewerId());
         if (player == null || !Bukkit.isOwnedByCurrentRegion(player)) {
             return null;
         }
         Location position = player.getLocation(viewerPosition);
-        return frame.project(position.getX(), position.getY() + player.getEyeHeight(),
+        return view.frame().project(position.getX(), position.getY() + player.getEyeHeight(),
                 position.getZ(), position.getYaw(), position.getPitch(), maxDistance);
     }
 
@@ -433,26 +415,17 @@ public final class BoardHologram {
     }
 
     private void despawnAll() {
-        for (Interaction hitbox : hitboxes) {
-            removeEntity(hitbox);
-        }
         clearState();
     }
 
     private void clearState() {
         spawned = false;
-        hitboxes.clear();
         for (HologramView view : views.values()) {
             view.destroy();
         }
         views.clear();
     }
 
-    private static void removeEntity(@NotNull Entity entity) {
-        if (entity.isValid()) {
-            entity.remove();
-        }
-    }
 
     private static void cancel(@Nullable SchedulerUtil.Task task) {
         if (task != null) {

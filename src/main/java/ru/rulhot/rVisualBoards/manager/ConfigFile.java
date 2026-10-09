@@ -15,8 +15,10 @@ import ru.rulhot.rVisualBoards.util.logger.Logger;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -26,6 +28,8 @@ public final class ConfigFile {
 
     private static final @NotNull String VERSION_KEY = "config-version";
     private static final @NotNull String PATH_SEPARATOR = ".";
+    private static final @NotNull String TEMPORARY_SUFFIX = ".tmp";
+    private static final @NotNull String BACKUP_SUFFIX = ".bak";
     private static final @NotNull String SOUND_KEY = "key";
     private static final @NotNull String SOUND_VOLUME = "volume";
     private static final @NotNull String SOUND_PITCH = "pitch";
@@ -69,7 +73,9 @@ public final class ConfigFile {
             YamlConfiguration current = new YamlConfiguration();
             current.loadFromString(Files.readString(file, StandardCharsets.UTF_8));
             if (isOutdated(current, defaults, preserved)) {
-                Files.writeString(file, merge(current, defaults, preserved).saveToString(), StandardCharsets.UTF_8);
+                Files.copy(file, file.resolveSibling(file.getFileName() + BACKUP_SUFFIX),
+                        StandardCopyOption.REPLACE_EXISTING);
+                writeAtomically(file, merge(current, defaults, preserved).saveToString());
                 Logger.info("Файл " + name + " обновлён: добавлены новые ключи, ваши значения сохранены");
                 current.loadFromString(Files.readString(file, StandardCharsets.UTF_8));
             }
@@ -85,15 +91,31 @@ public final class ConfigFile {
 
     static @Nullable ConfigFile read(@NotNull Path file, @NotNull String name) {
         try {
+            return parse(Files.readString(file, StandardCharsets.UTF_8), name);
+        } catch (IOException exception) {
+            Logger.error("Не удалось прочитать " + name, exception);
+            return null;
+        }
+    }
+
+    static @Nullable ConfigFile parse(@NotNull String text, @NotNull String name) {
+        try {
             YamlConfiguration yaml = new YamlConfiguration();
-            yaml.loadFromString(Files.readString(file, StandardCharsets.UTF_8));
+            yaml.loadFromString(text);
             return new ConfigFile(name, yaml);
         } catch (InvalidConfigurationException exception) {
             Logger.error("Ошибка в " + name + ", исправьте файл и выполните /rvb reload: " + exception.getMessage());
             return null;
-        } catch (IOException exception) {
-            Logger.error("Не удалось прочитать " + name, exception);
-            return null;
+        }
+    }
+
+    private static void writeAtomically(@NotNull Path file, @NotNull String text) throws IOException {
+        Path temporary = file.resolveSibling(file.getFileName() + TEMPORARY_SUFFIX);
+        Files.writeString(temporary, text, StandardCharsets.UTF_8);
+        try {
+            Files.move(temporary, file, StandardCopyOption.ATOMIC_MOVE);
+        } catch (AtomicMoveNotSupportedException exception) {
+            Files.move(temporary, file, StandardCopyOption.REPLACE_EXISTING);
         }
     }
 
@@ -349,6 +371,7 @@ public final class ConfigFile {
                                                     @NotNull Set<String> preserved) {
         YamlConfiguration merged = new YamlConfiguration();
         merged.options().parseComments(true);
+        merged.options().width(Integer.MAX_VALUE);
         merged.options().setHeader(defaults.options().getHeader());
         for (String key : defaults.getKeys(true)) {
             if (key.equals(VERSION_KEY) || isInsidePreserved(key, preserved)) {
@@ -391,6 +414,10 @@ public final class ConfigFile {
 
     private static void copySection(@NotNull ConfigurationSection from, @NotNull ConfigurationSection to) {
         for (String key : from.getKeys(false)) {
+            if (key.isEmpty()) {
+                Logger.warn("Ключ с точкой в секции " + from.getCurrentPath() + " не поддерживается, запись пропущена");
+                continue;
+            }
             ConfigurationSection child = from.getConfigurationSection(key);
             if (child != null) {
                 copySection(child, to.createSection(key));

@@ -11,6 +11,7 @@ import ru.rulhot.rVisualBoards.model.TopDefinition.Period;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -20,6 +21,8 @@ final class HologramView {
     private static final long BUSY_MARGIN_TICKS = 2L;
 
     private final @NotNull User viewer;
+    private final @NotNull HitboxRegistry registry;
+    private final @NotNull List<PacketHitbox> hitboxes;
     private final @NotNull UUID viewerId;
     private final @NotNull HologramPart title;
     private final @Nullable HologramPart subtitle;
@@ -29,6 +32,7 @@ final class HologramView {
     private final @NotNull List<Button> buttons;
     private final @NotNull List<Group> groups;
     private final int @NotNull [] entityIds;
+    private final @NotNull BoardFrame frame;
     private final @NotNull AtomicInteger generation = new AtomicInteger();
 
     private volatile @NotNull String topId;
@@ -45,11 +49,15 @@ final class HologramView {
     private int hoveredButton = BoardGeometry.NO_BUTTON;
     private int hoveredRow = BoardGeometry.NO_ROW;
 
-    HologramView(@NotNull User viewer, @NotNull UUID viewerId, @NotNull String topId, @NotNull Period period,
-                 @NotNull HologramPart title, @Nullable HologramPart subtitle, @NotNull List<HologramPart> headers,
-                 @NotNull List<List<Cell>> rows, @NotNull List<Cell> standing, @NotNull List<Button> buttons,
-                 @NotNull List<Group> groups) {
+    HologramView(@NotNull User viewer, @NotNull BoardFrame frame, @NotNull UUID viewerId, @NotNull String topId,
+                 @NotNull Period period, @NotNull HologramPart title, @Nullable HologramPart subtitle,
+                 @NotNull List<HologramPart> headers, @NotNull List<List<Cell>> rows, @NotNull List<Cell> standing,
+                 @NotNull List<Button> buttons, @NotNull List<Group> groups, @NotNull List<PacketHitbox> hitboxes,
+                 @NotNull HitboxRegistry registry) {
         this.viewer = viewer;
+        this.frame = frame;
+        this.registry = registry;
+        this.hitboxes = List.copyOf(hitboxes);
         this.viewerId = viewerId;
         this.topId = topId;
         this.period = period;
@@ -60,10 +68,12 @@ final class HologramView {
         this.standing = List.copyOf(standing);
         this.buttons = List.copyOf(buttons);
         this.groups = List.copyOf(groups);
-        this.entityIds = Stream.concat(
-                        groups.stream().flatMap(group -> group.parts().stream()),
-                        buttons.stream().flatMap(button -> button.parts().stream()))
-                .mapToInt(HologramPart::entityId)
+        this.entityIds = IntStream.concat(
+                        Stream.concat(
+                                        groups.stream().flatMap(group -> group.parts().stream()),
+                                        buttons.stream().flatMap(button -> button.parts().stream()))
+                                .mapToInt(HologramPart::entityId),
+                        this.hitboxes.stream().mapToInt(PacketHitbox::entityId))
                 .toArray();
     }
 
@@ -112,8 +122,15 @@ final class HologramView {
         return groups;
     }
 
+    @NotNull BoardFrame frame() {
+        return frame;
+    }
+
     void destroy() {
         detach();
+        for (PacketHitbox hitbox : hitboxes) {
+            registry.remove(hitbox.entityId());
+        }
         viewer.sendPacket(new WrapperPlayServerDestroyEntities(entityIds));
     }
 

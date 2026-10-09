@@ -1,5 +1,7 @@
 package ru.rulhot.rVisualBoards;
 
+import com.github.retrooper.packetevents.PacketEvents;
+import com.github.retrooper.packetevents.event.PacketListenerCommon;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -13,7 +15,7 @@ import ru.rulhot.rVisualBoards.command.sub.MoveHereSubCommand;
 import ru.rulhot.rVisualBoards.command.sub.ReloadSubCommand;
 import ru.rulhot.rVisualBoards.command.sub.RemoveSubCommand;
 import ru.rulhot.rVisualBoards.hologram.HologramKeys;
-import ru.rulhot.rVisualBoards.listener.HologramInteractListener;
+import ru.rulhot.rVisualBoards.listener.HologramClickListener;
 import ru.rulhot.rVisualBoards.listener.HologramScrollListener;
 import ru.rulhot.rVisualBoards.listener.ViewerListener;
 import ru.rulhot.rVisualBoards.listener.WorldListener;
@@ -37,6 +39,7 @@ public final class RVisualBoards extends JavaPlugin {
 
     private @Nullable ReloadService reloadService;
     private @Nullable Metrics metrics;
+    private @Nullable PacketListenerCommon clickListener;
 
     @Override
     public void onEnable() {
@@ -54,7 +57,8 @@ public final class RVisualBoards extends JavaPlugin {
         reloadService = reloads;
 
         PluginManager pluginManager = getServer().getPluginManager();
-        pluginManager.registerEvents(new HologramInteractListener(keys, holograms), this);
+        clickListener = PacketEvents.getAPI().getEventManager()
+                .registerListener(new HologramClickListener(holograms, scheduler));
         pluginManager.registerEvents(new HologramScrollListener(holograms), this);
         pluginManager.registerEvents(new ViewerListener(holograms), this);
         pluginManager.registerEvents(new WorldListener(holograms), this);
@@ -80,6 +84,11 @@ public final class RVisualBoards extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        PacketListenerCommon currentClicks = clickListener;
+        clickListener = null;
+        if (currentClicks != null) {
+            PacketEvents.getAPI().getEventManager().unregisterListener(currentClicks);
+        }
         Metrics currentMetrics = metrics;
         metrics = null;
         if (currentMetrics != null) {

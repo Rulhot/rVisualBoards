@@ -15,6 +15,7 @@ public record HologramContext(
         @NotNull LeaderboardService leaderboards,
         @NotNull Settings settings,
         @NotNull BoardLayout layout,
-        @NotNull FontMetrics fontMetrics
+        @NotNull FontMetrics fontMetrics,
+        @NotNull HitboxRegistry hitboxes
 ) {
 }

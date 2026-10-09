@@ -13,6 +13,11 @@ import ru.rulhot.rVisualBoards.util.logger.Logger;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
@@ -23,6 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class BoardRepository {
 
     private static final @NotNull String FILE = "data/boards.yml";
+    private static final @NotNull String TEMPORARY_SUFFIX = ".tmp";
     private static final @NotNull String ROOT = "boards";
     private static final @NotNull String TYPE = "type";
     private static final @NotNull String WORLD = "world";
@@ -181,8 +187,15 @@ public final class BoardRepository {
                 Logger.error("Не удалось создать папку " + parent.getPath());
                 return;
             }
+            Path target = file.toPath();
+            Path temporary = target.resolveSibling(target.getFileName() + TEMPORARY_SUFFIX);
             try {
-                yaml.save(file);
+                Files.writeString(temporary, yaml.saveToString(), StandardCharsets.UTF_8);
+                try {
+                    Files.move(temporary, target, StandardCopyOption.ATOMIC_MOVE);
+                } catch (AtomicMoveNotSupportedException exception) {
+                    Files.move(temporary, target, StandardCopyOption.REPLACE_EXISTING);
+                }
             } catch (IOException exception) {
                 Logger.error("Не удалось сохранить " + FILE, exception);
             }

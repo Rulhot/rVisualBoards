@@ -32,6 +32,7 @@ scroll:
 
 animation:
   enabled: true
+  appear: true
   types:
     - CASCADE
   duration-ticks: 6

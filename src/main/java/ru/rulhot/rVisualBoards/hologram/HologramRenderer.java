@@ -43,7 +43,6 @@ final class HologramRenderer {
     private static final long NO_VERSION = 0L;
 
     private final @NotNull HologramContext context;
-    private final @NotNull BoardFrame frame;
     private final @NotNull List<TopDefinition> tops;
     private final @NotNull List<Column> columns;
     private final @NotNull BoardLayout.Table table;
@@ -52,10 +51,9 @@ final class HologramRenderer {
     private final @NotNull BoardGeometry geometry;
     private final @NotNull Map<Key, RowCache> rowCaches = new HashMap<>();
 
-    HologramRenderer(@NotNull HologramContext context, @NotNull BoardFrame frame, @NotNull BoardGeometry geometry,
+    HologramRenderer(@NotNull HologramContext context, @NotNull BoardGeometry geometry,
                      @NotNull List<TopDefinition> tops) {
         this.context = context;
-        this.frame = frame;
         this.geometry = geometry;
         this.tops = List.copyOf(tops);
         this.columns = context.layout().columns().ordered();
@@ -131,7 +129,7 @@ final class HologramRenderer {
                 FormatKey.PERSONAL_NAME,
                 FormatKey.PERSONAL_VALUE);
         for (int index = 0; index < cells.size(); index++) {
-            setCell(cells.get(index), columns.get(index), geometry.standingBottom(),
+            setCell(view.frame(), cells.get(index), columns.get(index), geometry.standingBottom(),
                     cellText(MessageUtil.parseText(top.format(keys.get(index)), placeholders)));
         }
         view.markStandingRendered(standing, key);
@@ -156,7 +154,7 @@ final class HologramRenderer {
         TopDefinition top = tops.get(view.buttonOffset() + slot.index());
         boolean active = top.id().equals(selected.id());
         button.label().text(label(top, selected, active));
-        fitLabel(button, labelScale);
+        fitLabel(view.frame(), button, labelScale);
         Color selectedColor = selected.buttonColor() == null ? colors.buttonSelected() : selected.buttonColor();
         recolor(button, active ? selectedColor : colors.button());
     }
@@ -172,7 +170,7 @@ final class HologramRenderer {
         Period period = periods.get(tab.index());
         boolean active = period == view.period();
         button.label().text(tabLabel(selected, period, active));
-        fitLabel(button, tabScale);
+        fitLabel(view.frame(), button, tabScale);
         recolor(button, active ? colors.tabSelected() : colors.tab());
     }
 
@@ -217,7 +215,7 @@ final class HologramRenderer {
                 Map.of(PERIOD, top.periodName(period)));
     }
 
-    private void fitLabel(@NotNull Button button, double scale) {
+    private void fitLabel(@NotNull BoardFrame frame, @NotNull Button button, double scale) {
         HologramPart label = button.label();
         if (!label.rescale((float) (scale * frame.scale()))) {
             return;
@@ -260,7 +258,7 @@ final class HologramRenderer {
         List<CellText> texts = rowTexts(top, view.period(), snapshot, place);
         double bottom = geometry.rowBottom(slot);
         for (int index = 0; index < row.size(); index++) {
-            setCell(row.get(index), columns.get(index), bottom, texts.get(index));
+            setCell(view.frame(), row.get(index), columns.get(index), bottom, texts.get(index));
         }
     }
 
@@ -296,7 +294,8 @@ final class HologramRenderer {
         return new CellText(text, context.fontMetrics().width(text));
     }
 
-    private void setCell(@NotNull Cell cell, @NotNull Column column, double bottom, @NotNull CellText cellText) {
+    private void setCell(@NotNull BoardFrame frame, @NotNull Cell cell, @NotNull Column column, double bottom,
+                         @NotNull CellText cellText) {
         if (!cell.show(cellText.text())) {
             return;
         }

@@ -93,6 +93,7 @@ public final class ConfigManager {
                         file.decimal(Scroll.DISTANCE, Scroll.DEFAULT_DISTANCE)),
                 new Animation(
                         file.bool(Animation.ENABLED, Animation.DEFAULT_ENABLED),
+                        file.bool(Animation.APPEAR, Animation.DEFAULT_APPEAR),
                         file.enumList(Animation.TYPES, AnimationType.class, Animation.DEFAULT_TYPES),
                         file.integer(Animation.DURATION, Animation.DEFAULT_DURATION),
                         file.integer(Animation.STAGGER, Animation.DEFAULT_STAGGER),

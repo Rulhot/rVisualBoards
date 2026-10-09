@@ -9,6 +9,7 @@ import ru.rulhot.rVisualBoards.model.Settings.AnimationType;
 import ru.rulhot.rVisualBoards.model.TopDefinition;
 import ru.rulhot.rVisualBoards.util.SchedulerUtil;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -51,6 +52,25 @@ final class SwitchAnimator {
                 enter(group, type);
             });
             schedule(view, generation, start + duration + 1L, () -> settle(group));
+        }
+    }
+
+    void appear(@NotNull HologramView view) {
+        if (!animation.enabled() || !animation.appear()) {
+            return;
+        }
+        int generation = view.nextGeneration();
+        AnimationType type = pickType();
+        List<Group> groups = new ArrayList<>(view.groups());
+        List<HologramPart> buttonParts = view.buttons().stream().flatMap(button -> button.parts().stream()).toList();
+        groups.add(new Group(GroupKind.COLUMNS, 0, buttonParts));
+        for (Group group : groups) {
+            enter(group, type);
+        }
+        view.markBusy(delay(groups.size() - 1, type) + animation.durationTicks() + 1L);
+        for (int step = 0; step < groups.size(); step++) {
+            Group group = groups.get(step);
+            schedule(view, generation, delay(step, type) + 1L, () -> settle(group));
         }
     }
 

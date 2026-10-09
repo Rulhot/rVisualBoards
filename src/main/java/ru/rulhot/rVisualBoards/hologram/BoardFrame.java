@@ -10,6 +10,8 @@ final class BoardFrame {
 
     private static final double PARALLEL_EPSILON = 1.0E-6D;
     private static final int CHUNK_SHIFT = 4;
+    private static final float FULL_TURN = 360F;
+    private static final float PROTOCOL_ANGLE_STEP = FULL_TURN / 256F;
 
     private final @NotNull Location origin;
     private final double rightX;
@@ -19,13 +21,22 @@ final class BoardFrame {
     private final double scale;
 
     BoardFrame(@NotNull World world, @NotNull PlacedBoard board) {
-        this.origin = new Location(world, board.x(), board.y(), board.z(), board.yaw(), 0F);
-        this.scale = board.scale();
-        double radians = Math.toRadians(board.yaw());
+        this(world, board.x(), board.y(), board.z(), board.yaw(), board.scale());
+    }
+
+    private BoardFrame(@NotNull World world, double x, double y, double z, float yaw, double scale) {
+        float exact = Math.round(normalize(yaw) / PROTOCOL_ANGLE_STEP) * PROTOCOL_ANGLE_STEP;
+        this.origin = new Location(world, x, y, z, exact, 0F);
+        this.scale = scale;
+        double radians = Math.toRadians(exact);
         this.rightX = Math.cos(radians);
         this.rightZ = Math.sin(radians);
         this.normalX = -Math.sin(radians);
         this.normalZ = Math.cos(radians);
+    }
+
+    private static float normalize(float yaw) {
+        return ((yaw % FULL_TURN) + FULL_TURN) % FULL_TURN;
     }
 
     @NotNull Location origin() {
