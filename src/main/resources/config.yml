@@ -3,6 +3,7 @@ view-radius: 32.0
 snap-to-grid: true
 debug: false
 metrics: true
+update-check: true
 
 command:
   name: "rvb"

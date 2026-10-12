@@ -15,6 +15,7 @@ import ru.rulhot.rVisualBoards.model.BoardLayout.Tabs;
 import ru.rulhot.rVisualBoards.model.BoardLayout.Table;
 import ru.rulhot.rVisualBoards.model.BoardType;
 import ru.rulhot.rVisualBoards.model.PlacedBoard;
+import ru.rulhot.rVisualBoards.model.Settings.Placeholders;
 import ru.rulhot.rVisualBoards.model.TopDefinition;
 import ru.rulhot.rVisualBoards.model.TopDefinition.FormatKey;
 import ru.rulhot.rVisualBoards.model.TopDefinition.Period;
@@ -109,11 +110,12 @@ public final class TopManager {
 
     static @NotNull List<TopDefinition> parseTops(@NotNull ConfigFile file) {
         Map<FormatKey, String> defaults = parseFormats(file, TopDefinition.FORMATS, Map.of());
+        Map<String, String> placeholders = parsePlaceholders(file, TopDefinition.PLACEHOLDERS, Map.of());
         List<Period> periods = file.enumList(TopDefinition.PERIODS, Period.class, TopDefinition.DEFAULT_PERIODS);
         Map<Period, String> periodNames = parsePeriodNames(file);
         Map<String, TopDefinition> result = new LinkedHashMap<>();
         for (String key : file.keys(TopDefinition.TOPS)) {
-            TopDefinition top = parseTop(file, key, defaults, periods, periodNames);
+            TopDefinition top = parseTop(file, key, defaults, placeholders, periods, periodNames);
             if (top != null && result.putIfAbsent(top.id(), top) != null) {
                 file.warn(ConfigFile.join(TopDefinition.TOPS, key), "топ с таким ID уже есть, пропущен");
             }
@@ -136,6 +138,7 @@ public final class TopManager {
 
     private static @Nullable TopDefinition parseTop(@NotNull ConfigFile file, @NotNull String key,
                                                    @NotNull Map<FormatKey, String> defaults,
+                                                   @NotNull Map<String, String> placeholders,
                                                    @NotNull List<Period> periods,
                                                    @NotNull Map<Period, String> periodNames) {
         String path = ConfigFile.join(TopDefinition.TOPS, key);
@@ -157,7 +160,26 @@ public final class TopManager {
                 file.string(ConfigFile.join(path, TopDefinition.TITLE), ""),
                 file.optionalColor(ConfigFile.join(path, TopDefinition.BUTTON_COLOR)),
                 parseFormats(file, ConfigFile.join(path, TopDefinition.FORMATS), defaults),
+                parsePlaceholders(file, ConfigFile.join(path, TopDefinition.PLACEHOLDERS), placeholders),
                 periodNames);
+    }
+
+    private static @NotNull Map<String, String> parsePlaceholders(@NotNull ConfigFile file, @NotNull String path,
+                                                                 @NotNull Map<String, String> fallback) {
+        Map<String, String> placeholders = new LinkedHashMap<>(fallback);
+        for (String key : file.keys(path)) {
+            if (!Placeholders.KEYS.contains(key)) {
+                file.warn(ConfigFile.join(path, key), "неизвестный ключ, допустимы " + Placeholders.KEYS);
+                continue;
+            }
+            String template = file.string(ConfigFile.join(path, key), "");
+            if (template.isBlank() && Placeholders.REQUIRED_KEYS.contains(key)) {
+                file.warn(ConfigFile.join(path, key), "шаблон не может быть пустым, пропущен");
+                continue;
+            }
+            placeholders.put(key, template);
+        }
+        return placeholders;
     }
 
     private static @NotNull Map<Period, String> parsePeriodNames(@NotNull ConfigFile file) {

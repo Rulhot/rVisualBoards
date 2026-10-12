@@ -25,10 +25,12 @@ import ru.rulhot.rVisualBoards.model.PlacedBoard;
 import ru.rulhot.rVisualBoards.model.PlacedBoard.Direction;
 import ru.rulhot.rVisualBoards.service.BoardService;
 import ru.rulhot.rVisualBoards.service.BoardService.EditResult;
+import ru.rulhot.rVisualBoards.util.SchedulerUtil;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 
@@ -48,6 +50,7 @@ public final class EditSubCommand implements SubCommand {
     private final @NotNull ConfigManager config;
     private final @NotNull BoardService boards;
     private final @NotNull TopManager tops;
+    private final @NotNull SchedulerUtil scheduler;
 
     @Override
     public @NotNull LiteralArgumentBuilder<CommandSourceStack> node() {
@@ -138,9 +141,19 @@ public final class EditSubCommand implements SubCommand {
             return;
         }
         double distance = TELEPORT_DISTANCE * board.scale();
+        UUID playerId = player.getUniqueId();
         player.teleportAsync(new Location(world, board.frontX(distance), board.y(), board.frontZ(distance),
-                board.viewerYaw(), 0F));
-        sender.sendMessage(config.formatCommandMessage("edit.teleported", board.placeholders()));
+                        board.viewerYaw(), 0F))
+                .thenAccept(success -> replyTeleport(playerId, board, success));
+    }
+
+    private void replyTeleport(@NotNull UUID playerId, @NotNull PlacedBoard board, boolean success) {
+        Player online = Bukkit.getPlayer(playerId);
+        if (online == null) {
+            return;
+        }
+        String message = success ? "edit.teleported" : "edit.teleport-failed";
+        scheduler.runFor(online, () -> online.sendMessage(config.formatCommandMessage(message, board.placeholders())));
     }
 
     private void setDefaultTop(@NotNull CommandContext<CommandSourceStack> context) {

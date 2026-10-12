@@ -32,6 +32,24 @@ tops:
       row-value: "<#ea3e3e>{value} <#f84141>☠"
       empty-place: "<#f74141>{place}"
       empty-value: "<#ea3e3e>--- <#f84141>☠"
+##  Пример топа из другого плагина (CakeAuction). Чтобы включить, уберите ## в начале строк.
+##  sellers:
+##    board: cakeauction_sellers
+##    label: "Продавцы"
+##    title: "<gradient:#3fd97a:#a5f08c>Топ продавцов"
+##    button-color: "#B30C3618"
+##    placeholders:
+##      name: "%cakeauction_top_raw_name_{place}%"
+##      prefix: "%cakeauction_top_prefix_{place}%"
+##      value: "%cakeauction_top_value_{place}%"
+##      position: ""
+##      personal-value: ""
+##    formats:
+##      header-value: "<#a6a6a6>Продажи"
+##      row-place: "<#4fe08a>{place}"
+##      row-value: "<#45cf7d>{value} <#fcfcfc>шт."
+##      empty-place: "<#4fe08a>{place}"
+##      empty-value: "<#45cf7d>--- <#fcfcfc>шт."
 
 periods:
   - alltime

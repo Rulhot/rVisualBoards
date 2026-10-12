@@ -30,12 +30,14 @@ public record Settings(
     public static final @NotNull String SNAP_TO_GRID = "snap-to-grid";
     public static final @NotNull String DEBUG = "debug";
     public static final @NotNull String METRICS = "metrics";
+    public static final @NotNull String UPDATE_CHECK = "update-check";
 
     public static final int DEFAULT_UPDATE_INTERVAL = 10;
     public static final double DEFAULT_VIEW_RADIUS = 32D;
     public static final boolean DEFAULT_SNAP_TO_GRID = true;
     public static final boolean DEFAULT_DEBUG = false;
     public static final boolean DEFAULT_METRICS = true;
+    public static final boolean DEFAULT_UPDATE_CHECK = true;
 
     public static final int MIN_UPDATE_INTERVAL = 1;
     public static final int MAX_UPDATE_INTERVAL = 86_400;
@@ -271,11 +273,29 @@ public record Settings(
         public static final @NotNull String DEFAULT_PERSONAL_VALUE = "%ajlb_value_{board}_{type}%";
         public static final @NotNull String DEFAULT_EMPTY_NAME = "---";
 
+        public static final @NotNull String KEY_NAME = "name";
+        public static final @NotNull String KEY_PREFIX = "prefix";
+        public static final @NotNull String KEY_VALUE = "value";
+        public static final @NotNull String KEY_POSITION = "position";
+        public static final @NotNull String KEY_PERSONAL_VALUE = "personal-value";
+        public static final @NotNull String KEY_EMPTY_NAME = "empty-name";
+        public static final @NotNull List<String> KEYS =
+                List.of(KEY_NAME, KEY_PREFIX, KEY_VALUE, KEY_POSITION, KEY_PERSONAL_VALUE, KEY_EMPTY_NAME);
+        public static final @NotNull List<String> REQUIRED_KEYS = List.of(KEY_NAME, KEY_VALUE);
+
         public Placeholders {
             name = required(NAME, name, DEFAULT_NAME);
             value = required(VALUE, value, DEFAULT_VALUE);
-            position = required(POSITION, position, DEFAULT_POSITION);
-            personalValue = required(PERSONAL_VALUE, personalValue, DEFAULT_PERSONAL_VALUE);
+        }
+
+        public @NotNull Placeholders with(@NotNull Map<String, String> overrides) {
+            return new Placeholders(
+                    overrides.getOrDefault(KEY_NAME, name),
+                    overrides.getOrDefault(KEY_PREFIX, prefix),
+                    overrides.getOrDefault(KEY_VALUE, value),
+                    overrides.getOrDefault(KEY_POSITION, position),
+                    overrides.getOrDefault(KEY_PERSONAL_VALUE, personalValue),
+                    overrides.getOrDefault(KEY_EMPTY_NAME, emptyName));
         }
 
         private static @NotNull String required(@NotNull String path, @NotNull String value, @NotNull String fallback) {

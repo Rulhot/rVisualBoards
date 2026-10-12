@@ -56,6 +56,7 @@ edit:
   scaled: "{prefix}Размер табло <white>{id}</white>: <white>{scale}"
   moved: "{prefix}Табло <white>{id}</white> теперь на <white>{world} {x} {y} {z}"
   teleported: "{prefix}Вы у табло <white>{id}"
+  teleport-failed: "{prefix}<white>Не удалось переместиться к табло <white>{id}</white>. Попробуйте ещё раз."
   world-not-loaded: "{prefix}<white>Мир <white>{world}</white> не загружен."
   type: "{prefix}Табло <white>{id}</white> теперь вида <white>{type}</white>."
   default-top: "{prefix}Табло <white>{id}</white> открывается на топе <white>{top}</white>."

@@ -50,16 +50,13 @@ public final class ConfigManager {
         return settings;
     }
 
-    public @NotNull Settings.Command readCommand() {
+    public @NotNull Startup readStartup() {
         ConfigFile file = ConfigFile.load(plugin, Settings.FILE, PRESERVED_SETTINGS);
-        return file == null ? Settings.Command.DEFAULT : parseCommand(file);
-    }
-
-    public boolean isMetrics() {
-        ConfigFile file = ConfigFile.load(plugin, Settings.FILE, PRESERVED_SETTINGS);
-        return file == null
-                ? Settings.DEFAULT_METRICS
-                : file.bool(Settings.METRICS, Settings.DEFAULT_METRICS);
+        if (file == null) {
+            return new Startup(Settings.Command.DEFAULT, Settings.DEFAULT_METRICS, Settings.DEFAULT_UPDATE_CHECK);
+        }
+        return new Startup(parseCommand(file), file.bool(Settings.METRICS, Settings.DEFAULT_METRICS),
+                file.bool(Settings.UPDATE_CHECK, Settings.DEFAULT_UPDATE_CHECK));
     }
 
     public @NotNull Component getCommandMessage(@NotNull String key) {
@@ -152,6 +149,9 @@ public final class ConfigManager {
             }
             sink.put(child, file.string(child, "").replace(PREFIX_TOKEN, prefix));
         }
+    }
+
+    public record Startup(@NotNull Settings.Command command, boolean metrics, boolean updateCheck) {
     }
 
     public record Snapshot(@NotNull Settings settings, @NotNull Messages messages) {

@@ -18,6 +18,7 @@ import ru.rulhot.rVisualBoards.util.SchedulerUtil;
 import ru.rulhot.rVisualBoards.util.logger.Logger;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -32,8 +33,7 @@ public final class LeaderboardService {
 
     private static final @NotNull String BOARD_TOKEN = "{board}";
     private static final @NotNull String TYPE_TOKEN = "{type}";
-    private static final @NotNull String PLACE_TOKEN = "{place}";
-    private static final char PLACEHOLDER_MARK = '%';
+    private static final @NotNull String PLACE_TOKEN = "{place}";    private static final char PLACEHOLDER_MARK = '%';
     private static final long FIRST_REFRESH_DELAY_TICKS = 1L;
     private static final int PERSONAL_PLACE = 0;
     private static final long MIN_ACTIVE_MILLIS = 60_000L;
@@ -56,14 +56,18 @@ public final class LeaderboardService {
         stop();
         Set<String> boards = new HashSet<>();
         Set<Key> defaults = new HashSet<>();
+        Map<String, Placeholders> placeholders = new HashMap<>();
         for (TopDefinition top : tops) {
             boards.add(top.board());
             defaults.add(new Key(top.board(), top.defaultPeriod()));
+            if (!top.placeholders().isEmpty()) {
+                placeholders.put(top.board(), settings.advanced().placeholders().with(top.placeholders()));
+            }
         }
         long activeMillis = Math.max(MIN_ACTIVE_MILLIS,
                 settings.updateIntervalSeconds() * MILLIS_PER_SECOND * ACTIVE_INTERVALS);
-        source = new Source(settings.advanced().placeholders(), Set.copyOf(boards), Set.copyOf(defaults), places,
-                activeMillis);
+        source = new Source(settings.advanced().placeholders(), Map.copyOf(placeholders), Set.copyOf(boards),
+                Set.copyOf(defaults), places, activeMillis);
         task = scheduler.runAsyncTimer(this::refresh, FIRST_REFRESH_DELAY_TICKS, settings.updateIntervalTicks());
     }
 
@@ -185,7 +189,7 @@ public final class LeaderboardService {
     }
 
     private void refreshBoard(@NotNull Source current, @NotNull Key key) {
-        Placeholders placeholders = current.placeholders();
+        Placeholders placeholders = current.placeholders(key);
         List<Entry> entries = new ArrayList<>();
         boolean complete = false;
         for (int place = 1; place <= current.places(); place++) {
@@ -200,6 +204,9 @@ public final class LeaderboardService {
                     : resolve(null, fill(placeholders.prefix(), key, place));
             entries.add(new Entry(place, isUnresolved(prefix) ? "" : prefix, name, value));
         }
+        if (source != current) {
+            return;
+        }
         LeaderboardSnapshot previous = snapshots.get(key);
         if (previous != null && previous.complete() == complete && previous.entries().equals(entries)) {
             return;
@@ -210,7 +217,12 @@ public final class LeaderboardService {
 
     private void loadStanding(@NotNull Source current, @NotNull UUID viewerId, @NotNull String viewerName,
                               @NotNull Key key) {
-        Placeholders placeholders = current.placeholders();
+        Placeholders placeholders = current.placeholders(key);
+        if (placeholders.position().isBlank()) {
+            standings.computeIfAbsent(viewerId, id -> new ConcurrentHashMap<>())
+                    .put(key, standingFromSnapshot(key, viewerName));
+            return;
+        }
         OfflinePlayer player = Bukkit.getOfflinePlayer(viewerId);
         String rawPosition = resolve(player, fill(placeholders.position(), key, PERSONAL_PLACE));
         String value = resolve(player, fill(placeholders.personalValue(), key, PERSONAL_PLACE)).trim();
@@ -220,6 +232,19 @@ public final class LeaderboardService {
         Standing standing = new Standing(String.valueOf(position), known ? value : Standing.UNKNOWN.value(),
                 position > LeaderboardSnapshot.UNRANKED);
         standings.computeIfAbsent(viewerId, id -> new ConcurrentHashMap<>()).put(key, standing);
+    }
+
+    private @NotNull Standing standingFromSnapshot(@NotNull Key key, @NotNull String viewerName) {
+        LeaderboardSnapshot snapshot = snapshots.get(key);
+        if (snapshot == null) {
+            return Standing.UNKNOWN;
+        }
+        for (Entry entry : snapshot.entries()) {
+            if (entry.name().equalsIgnoreCase(viewerName)) {
+                return new Standing(String.valueOf(entry.place()), entry.value(), true);
+            }
+        }
+        return Standing.UNKNOWN;
     }
 
     private boolean isConfirmed(@NotNull Key key, int position, @NotNull String viewerName) {
@@ -253,11 +278,16 @@ public final class LeaderboardService {
 
     private record Source(
             @NotNull Placeholders placeholders,
+            @NotNull Map<String, Placeholders> overrides,
             @NotNull Set<String> boards,
             @NotNull Set<Key> defaults,
             int places,
             long activeMillis
     ) {
+
+        @NotNull Placeholders placeholders(@NotNull Key key) {
+            return overrides.getOrDefault(key.id(), placeholders);
+        }
     }
 
     private record Demand(@NotNull String viewerName, @NotNull Set<Key> keys) {

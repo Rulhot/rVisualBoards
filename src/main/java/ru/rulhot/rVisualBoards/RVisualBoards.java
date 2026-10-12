@@ -29,6 +29,7 @@ import ru.rulhot.rVisualBoards.service.ReloadService;
 import ru.rulhot.rVisualBoards.storage.BoardRepository;
 import ru.rulhot.rVisualBoards.util.Metrics;
 import ru.rulhot.rVisualBoards.util.SchedulerUtil;
+import ru.rulhot.rVisualBoards.util.UpdateChecker;
 import ru.rulhot.rVisualBoards.util.logger.Logger;
 
 import java.util.List;
@@ -68,16 +69,19 @@ public final class RVisualBoards extends JavaPlugin {
                 new CreateSubCommand(config, boardService, tops),
                 new MoveHereSubCommand(config, boardService),
                 new RemoveSubCommand(config, boardService),
-                new EditSubCommand(config, boardService, tops),
+                new EditSubCommand(config, boardService, tops, scheduler),
                 new ListSubCommand(config, boardService),
                 new ReloadSubCommand(config, reloads, scheduler)));
-        getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> {
-            Settings.Command settings = config.readCommand();
-            event.registrar().register(command.build(settings.name()), settings.aliases());
-        });
+        ConfigManager.Startup startup = config.readStartup();
+        Settings.Command settings = startup.command();
+        getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS,
+                event -> event.registrar().register(command.build(settings.name()), settings.aliases()));
 
-        if (config.isMetrics()) {
+        if (startup.metrics()) {
             metrics = new Metrics(this, BSTATS_ID);
+        }
+        if (startup.updateCheck()) {
+            new UpdateChecker(getPluginMeta().getVersion()).check();
         }
         reloads.start();
     }

@@ -123,10 +123,9 @@ public final class BoardHologram {
         UUID viewerId = player.getUniqueId();
         String viewerName = player.getName();
         boolean rowsOnly = target == current;
-        view.select(target.id(), period);
         context.selections().put(viewerId, board.id(), target.id(), period);
         context.leaderboards().request(target.board(), period);
-        context.scheduler().runAt(origin, () -> switchTo(view, target, viewerName, rowsOnly));
+        context.scheduler().runAt(origin, () -> switchTo(view, target, period, viewerName, rowsOnly));
         if (context.layout().table().personalRow()) {
             context.leaderboards().fetchStanding(viewerId, viewerName, target.board(), period)
                     .whenComplete((ignored, error) -> refreshStanding(viewerId));
@@ -203,11 +202,12 @@ public final class BoardHologram {
         return tab.index() < periods.size() ? periods.get(tab.index()) : null;
     }
 
-    private void switchTo(@NotNull HologramView view, @NotNull TopDefinition top, @NotNull String viewerName,
-                          boolean rowsOnly) {
+    private void switchTo(@NotNull HologramView view, @NotNull TopDefinition top, @NotNull Period period,
+                          @NotNull String viewerName, boolean rowsOnly) {
         if (stopped || views.get(view.viewerId()) != view) {
             return;
         }
+        view.select(top.id(), period);
         view.scrollOffset(0);
         animator.play(view, top, viewerName, rowsOnly);
     }
@@ -425,7 +425,6 @@ public final class BoardHologram {
         }
         views.clear();
     }
-
 
     private static void cancel(@Nullable SchedulerUtil.Task task) {
         if (task != null) {

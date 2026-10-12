@@ -17,10 +17,12 @@ public record TopDefinition(
         @NotNull String title,
         @Nullable Color buttonColor,
         @NotNull Map<FormatKey, String> formats,
+        @NotNull Map<String, String> placeholders,
         @NotNull Map<Period, String> periodNames
 ) {
 
     public static final @NotNull String FORMATS = "formats";
+    public static final @NotNull String PLACEHOLDERS = "placeholders";
     public static final @NotNull String TOPS = "tops";
     public static final @NotNull String BOARD = "board";
     public static final @NotNull String PERIODS = "periods";
@@ -35,6 +37,7 @@ public record TopDefinition(
     public TopDefinition {
         periods = periods.isEmpty() ? DEFAULT_PERIODS : List.copyOf(new LinkedHashSet<>(periods));
         formats = Map.copyOf(formats);
+        placeholders = Map.copyOf(placeholders);
         periodNames = Map.copyOf(periodNames);
     }
 
