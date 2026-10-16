@@ -72,14 +72,14 @@ public record Settings(
         public Command {
             name = name.trim().toLowerCase(Locale.ROOT);
             if (!LABEL.matcher(name).matches()) {
-                warn(NAME, "\"" + name + "\" не подходит (латиница, цифры, _ и -), используется " + DEFAULT_NAME);
+                warn(NAME, "\"" + name + "\" не подходит (латиница, цифры, _ и -), беру " + DEFAULT_NAME);
                 name = DEFAULT_NAME;
             }
             List<String> valid = new ArrayList<>();
             for (String alias : aliases) {
                 String label = alias.trim().toLowerCase(Locale.ROOT);
                 if (!LABEL.matcher(label).matches()) {
-                    warn(ALIASES, "\"" + alias + "\" не подходит (латиница, цифры, _ и -), пропущено");
+                    warn(ALIASES, "\"" + alias + "\" не подходит (латиница, цифры, _ и -), пропускаю");
                     continue;
                 }
                 if (!label.equals(name) && !valid.contains(label)) {
@@ -302,7 +302,7 @@ public record Settings(
             if (!value.isBlank()) {
                 return value;
             }
-            warn(path, "шаблон не может быть пустым, используется " + fallback);
+            warn(path, "шаблон не может быть пустым, беру " + fallback);
             return fallback;
         }
     }
@@ -311,7 +311,7 @@ public record Settings(
         if (value >= min && value <= max) {
             return value;
         }
-        warn(path, value + " вне диапазона " + min + ".." + max + ", используется " + fallback);
+        warn(path, value + " вне диапазона " + min + ".." + max + ", беру " + fallback);
         return fallback;
     }
 
@@ -319,7 +319,7 @@ public record Settings(
         if (value >= min && value <= max) {
             return value;
         }
-        warn(path, value + " вне диапазона " + min + ".." + max + ", используется " + fallback);
+        warn(path, value + " вне диапазона " + min + ".." + max + ", беру " + fallback);
         return fallback;
     }
 

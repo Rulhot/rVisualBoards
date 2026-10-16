@@ -136,7 +136,7 @@ public final class BoardRepository {
             ConfigurationSection section = root.getConfigurationSection(rawId);
             String world = section == null ? null : section.getString(WORLD);
             if (!PlacedBoard.isValidId(id) || section == null || world == null || world.isBlank()) {
-                Logger.warn("[" + FILE + "] запись повреждена (неверный ID или нет мира), пропущена: board=" + rawId);
+                Logger.warn("[" + FILE + "] табло '" + rawId + "' повреждено (неверный ID или нет мира), пропускаю");
                 continue;
             }
             String defaultTop = section.getString(DEFAULT_TOP);
@@ -159,7 +159,7 @@ public final class BoardRepository {
             return scale;
         }
         Logger.warn("[" + FILE + "] размер вне диапазона " + PlacedBoard.MIN_SCALE + ".." + PlacedBoard.MAX_SCALE
-                + ", используется " + PlacedBoard.DEFAULT_SCALE + ": board=" + id);
+                + " у табло '" + id + "', беру " + PlacedBoard.DEFAULT_SCALE);
         return PlacedBoard.DEFAULT_SCALE;
     }
 

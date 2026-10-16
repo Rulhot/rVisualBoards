@@ -20,7 +20,7 @@ public final class HelpSubCommand implements SubCommand {
     public @NotNull LiteralArgumentBuilder<CommandSourceStack> node() {
         return Commands.literal(NAME)
                 .executes(context -> {
-                    context.getSource().getSender().sendMessage(config.getCommandMessage("general.help"));
+                    config.send(context.getSource().getSender(), "general.help");
                     return Command.SINGLE_SUCCESS;
                 });
     }

@@ -76,12 +76,13 @@ public final class ConfigFile {
                 Files.copy(file, file.resolveSibling(file.getFileName() + BACKUP_SUFFIX),
                         StandardCopyOption.REPLACE_EXISTING);
                 writeAtomically(file, merge(current, defaults, preserved).saveToString());
-                Logger.info("Файл " + name + " обновлён: добавлены новые ключи, ваши значения сохранены");
+                Logger.info("Обновлён " + name + ": добавлены новые ключи, копия старого файла в " + file.getFileName()
+                        + BACKUP_SUFFIX);
                 current.loadFromString(Files.readString(file, StandardCharsets.UTF_8));
             }
             return new ConfigFile(name, current);
         } catch (InvalidConfigurationException exception) {
-            Logger.error("Ошибка в " + name + ", исправьте файл и выполните /rvb reload: " + exception.getMessage());
+            Logger.error("Ошибка в " + name + ", исправь файл и перезагрузи конфиг: " + exception.getMessage());
             return null;
         } catch (IOException exception) {
             Logger.error("Не удалось прочитать или записать " + name, exception);
@@ -104,7 +105,7 @@ public final class ConfigFile {
             yaml.loadFromString(text);
             return new ConfigFile(name, yaml);
         } catch (InvalidConfigurationException exception) {
-            Logger.error("Ошибка в " + name + ", исправьте файл и выполните /rvb reload: " + exception.getMessage());
+            Logger.error("Ошибка в " + name + ", исправь файл и перезагрузи конфиг: " + exception.getMessage());
             return null;
         }
     }
@@ -122,7 +123,7 @@ public final class ConfigFile {
     private static @Nullable String bundled(@NotNull JavaPlugin plugin, @NotNull String name) {
         try (InputStream stream = plugin.getResource(name)) {
             if (stream == null) {
-                Logger.error("В jar плагина нет файла " + name + ", пересоберите плагин");
+                Logger.error("В jar плагина нет файла " + name + ", пересобери плагин");
                 return null;
             }
             return new String(stream.readAllBytes(), StandardCharsets.UTF_8);
@@ -151,7 +152,7 @@ public final class ConfigFile {
             return fallback;
         }
         if (raw instanceof ConfigurationSection || raw instanceof List<?>) {
-            warn(path, "ожидается строка, используется \"" + fallback + "\"");
+            warn(path, "ожидается строка, беру \"" + fallback + "\"");
             return fallback;
         }
         return String.valueOf(raw);
@@ -172,7 +173,7 @@ public final class ConfigFile {
         if (text.equalsIgnoreCase(Boolean.FALSE.toString())) {
             return false;
         }
-        warn(path, "ожидается true или false, используется " + fallback);
+        warn(path, "ожидается true или false, беру " + fallback);
         return fallback;
     }
 
@@ -185,7 +186,7 @@ public final class ConfigFile {
         if (value != null) {
             return value;
         }
-        warn(path, "неверное число \"" + raw + "\", используется " + fallback);
+        warn(path, "неверное число \"" + raw + "\", беру " + fallback);
         return fallback;
     }
 
@@ -194,7 +195,7 @@ public final class ConfigFile {
         if (value >= min && value <= max) {
             return value;
         }
-        warn(path, value + " вне диапазона " + min + ".." + max + ", используется " + fallback);
+        warn(path, value + " вне диапазона " + min + ".." + max + ", беру " + fallback);
         return fallback;
     }
 
@@ -208,7 +209,7 @@ public final class ConfigFile {
         if (value >= min && value <= max) {
             return value;
         }
-        warn(path, value + " вне диапазона " + min + ".." + max + ", используется " + fallback);
+        warn(path, value + " вне диапазона " + min + ".." + max + ", беру " + fallback);
         return fallback;
     }
 
@@ -221,7 +222,7 @@ public final class ConfigFile {
         if (value != null && value == Math.rint(value) && value >= Integer.MIN_VALUE && value <= Integer.MAX_VALUE) {
             return value.intValue();
         }
-        warn(path, "ожидается целое число, а не \"" + raw + "\", используется значение по умолчанию");
+        warn(path, "ожидается целое число, а не \"" + raw + "\", беру по умолчанию");
         return null;
     }
 
@@ -251,14 +252,14 @@ public final class ConfigFile {
         if (parsed != null) {
             return parsed;
         }
-        warn(path, "неизвестное значение \"" + raw + "\", используется " + fallback.name());
+        warn(path, "неизвестное значение \"" + raw + "\", беру " + fallback.name());
         return fallback;
     }
 
     public @NotNull List<String> stringList(@NotNull String path, @NotNull List<String> fallback) {
         if (!yaml.isList(path)) {
             if (yaml.contains(path)) {
-                warn(path, "ожидается список, используется " + fallback);
+                warn(path, "ожидается список, беру " + fallback);
             }
             return fallback;
         }
@@ -269,7 +270,7 @@ public final class ConfigFile {
                                                         @NotNull List<E> fallback) {
         if (!yaml.isList(path)) {
             if (yaml.contains(path)) {
-                warn(path, "ожидается список, используется " + fallback);
+                warn(path, "ожидается список, беру " + fallback);
             }
             return fallback;
         }
@@ -277,13 +278,13 @@ public final class ConfigFile {
         for (String raw : yaml.getStringList(path)) {
             E parsed = parseEnum(type, raw);
             if (parsed == null) {
-                warn(path, "неизвестное значение \"" + raw + "\", пропущено");
+                warn(path, "неизвестное значение \"" + raw + "\", пропускаю");
                 continue;
             }
             values.add(parsed);
         }
         if (values.isEmpty()) {
-            warn(path, "в списке нет ни одного верного значения, используется " + fallback);
+            warn(path, "в списке нет ни одного верного значения, беру " + fallback);
             return fallback;
         }
         return List.copyOf(values);
@@ -415,7 +416,7 @@ public final class ConfigFile {
     private static void copySection(@NotNull ConfigurationSection from, @NotNull ConfigurationSection to) {
         for (String key : from.getKeys(false)) {
             if (key.isEmpty()) {
-                Logger.warn("Ключ с точкой в секции " + from.getCurrentPath() + " не поддерживается, запись пропущена");
+                Logger.warn("Ключ с точкой в секции " + from.getCurrentPath() + " не поддерживается, пропускаю");
                 continue;
             }
             ConfigurationSection child = from.getConfigurationSection(key);

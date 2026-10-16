@@ -35,12 +35,12 @@ public final class ListSubCommand implements SubCommand {
     private void list(@NotNull CommandSender sender) {
         List<PlacedBoard> placed = boards.boards();
         if (placed.isEmpty()) {
-            sender.sendMessage(config.getCommandMessage("list.empty"));
+            config.send(sender, "list.empty");
             return;
         }
-        sender.sendMessage(config.formatCommandMessage("list.header", Map.of("count", placed.size())));
+        config.send(sender, "list.header", Map.of("count", placed.size()));
         for (PlacedBoard board : placed) {
-            sender.sendMessage(config.formatCommandMessage("list.entry", board.placeholders()));
+            config.send(sender, "list.entry", board.placeholders());
         }
     }
 }

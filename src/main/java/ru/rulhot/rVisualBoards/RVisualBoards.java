@@ -3,6 +3,8 @@ package ru.rulhot.rVisualBoards;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketListenerCommon;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
+import org.bukkit.permissions.Permission;
+import org.bukkit.permissions.PermissionDefault;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.Nullable;
@@ -37,6 +39,8 @@ import java.util.List;
 public final class RVisualBoards extends JavaPlugin {
 
     private static final int BSTATS_ID = 34351;
+    private static final List<Permission> PERMISSIONS = List.of(
+            new Permission(BoardCommand.ADMIN_PERMISSION, PermissionDefault.OP));
 
     private @Nullable ReloadService reloadService;
     private @Nullable Metrics metrics;
@@ -58,6 +62,11 @@ public final class RVisualBoards extends JavaPlugin {
         reloadService = reloads;
 
         PluginManager pluginManager = getServer().getPluginManager();
+        for (Permission permission : PERMISSIONS) {
+            if (pluginManager.getPermission(permission.getName()) == null) {
+                pluginManager.addPermission(permission);
+            }
+        }
         clickListener = PacketEvents.getAPI().getEventManager()
                 .registerListener(new HologramClickListener(holograms, scheduler));
         pluginManager.registerEvents(new HologramScrollListener(holograms), this);
@@ -103,5 +112,6 @@ public final class RVisualBoards extends JavaPlugin {
         if (current != null) {
             current.shutdown();
         }
+        PERMISSIONS.forEach(permission -> getServer().getPluginManager().removePermission(permission));
     }
 }

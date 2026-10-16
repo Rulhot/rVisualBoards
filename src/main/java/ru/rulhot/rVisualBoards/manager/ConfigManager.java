@@ -1,7 +1,9 @@
 package ru.rulhot.rVisualBoards.manager;
 
 import lombok.RequiredArgsConstructor;
+import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
+import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -14,10 +16,12 @@ import ru.rulhot.rVisualBoards.model.Settings.Hover;
 import ru.rulhot.rVisualBoards.model.Settings.Placeholders;
 import ru.rulhot.rVisualBoards.model.Settings.Scroll;
 import ru.rulhot.rVisualBoards.util.MessageUtil;
+import ru.rulhot.rVisualBoards.util.logger.Logger;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 @RequiredArgsConstructor
 public final class ConfigManager {
@@ -25,12 +29,16 @@ public final class ConfigManager {
     private static final @NotNull String MESSAGES_FILE = "messages.yml";
     private static final @NotNull String MESSAGE_PREFIX = "prefix";
     private static final @NotNull String PREFIX_TOKEN = "{prefix}";
+    private static final @NotNull String COMMAND_TOKEN = "{command}";
+    private static final @NotNull Pattern HEX_TAG = Pattern.compile("</?#[0-9a-fA-F]{6}>");
+    private static final @NotNull Map<String, String> CONSOLE_SYMBOLS = Map.of("»", ">", "•", "*");
     private static final @NotNull Set<String> PRESERVED_SETTINGS = Set.of(Advanced.CHAR_WIDTHS);
 
     private final @NotNull JavaPlugin plugin;
 
     private volatile @Nullable Settings settings;
     private volatile @NotNull Messages messages = Messages.EMPTY;
+    private volatile @NotNull String command = Settings.Command.DEFAULT_NAME;
 
     public @Nullable Snapshot read() {
         ConfigFile settingsFile = ConfigFile.load(plugin, Settings.FILE, PRESERVED_SETTINGS);
@@ -55,16 +63,40 @@ public final class ConfigManager {
         if (file == null) {
             return new Startup(Settings.Command.DEFAULT, Settings.DEFAULT_METRICS, Settings.DEFAULT_UPDATE_CHECK);
         }
-        return new Startup(parseCommand(file), file.bool(Settings.METRICS, Settings.DEFAULT_METRICS),
+        Settings.Command parsed = parseCommand(file);
+        command = parsed.name();
+        return new Startup(parsed, file.bool(Settings.METRICS, Settings.DEFAULT_METRICS),
                 file.bool(Settings.UPDATE_CHECK, Settings.DEFAULT_UPDATE_CHECK));
     }
 
-    public @NotNull Component getCommandMessage(@NotNull String key) {
-        return MessageUtil.parseText(messages.raw(key));
+    public @NotNull Component message(@NotNull String key, @NotNull Map<String, ?> placeholders) {
+        Messages current = messages;
+        return MessageUtil.parseText(raw(current, key).replace(PREFIX_TOKEN, current.prefix()), placeholders);
     }
 
-    public @NotNull Component formatCommandMessage(@NotNull String key, @NotNull Map<String, ?> placeholders) {
-        return MessageUtil.parseText(messages.raw(key), placeholders);
+    public void send(@NotNull Audience audience, @NotNull String key) {
+        send(audience, key, Map.of());
+    }
+
+    public void send(@NotNull Audience audience, @NotNull String key, @NotNull Map<String, ?> placeholders) {
+        Messages current = messages;
+        String raw = raw(current, key);
+        if (raw.isEmpty()) {
+            return;
+        }
+        if (!(audience instanceof ConsoleCommandSender)) {
+            audience.sendMessage(MessageUtil.parseText(raw.replace(PREFIX_TOKEN, current.prefix()), placeholders));
+            return;
+        }
+        String console = HEX_TAG.matcher(raw.replace(PREFIX_TOKEN, "[" + plugin.getName() + "] ")).replaceAll("");
+        for (Map.Entry<String, String> symbol : CONSOLE_SYMBOLS.entrySet()) {
+            console = console.replace(symbol.getKey(), symbol.getValue());
+        }
+        audience.sendMessage(MessageUtil.parseText(console, placeholders));
+    }
+
+    private @NotNull String raw(@NotNull Messages current, @NotNull String key) {
+        return current.raw(key).replace(COMMAND_TOKEN, command);
     }
 
     static @NotNull Settings parseSettings(@NotNull ConfigFile file) {
@@ -118,7 +150,7 @@ public final class ConfigManager {
             }
             if (width < Advanced.MIN_CHAR_WIDTH || width > Advanced.MAX_CHAR_WIDTH) {
                 file.warn(path, "ширина должна быть от " + Advanced.MIN_CHAR_WIDTH + " до "
-                        + Advanced.MAX_CHAR_WIDTH + ", символы пропущены");
+                        + Advanced.MAX_CHAR_WIDTH + ", пропускаю");
                 continue;
             }
             symbols.codePoints().forEach(codePoint -> widths.put(codePoint, width));
@@ -133,21 +165,20 @@ public final class ConfigManager {
     }
 
     static @NotNull Messages parseMessages(@NotNull ConfigFile file) {
-        String prefix = file.string(MESSAGE_PREFIX, "");
         Map<String, String> entries = new HashMap<>();
-        collectMessages(file, "", prefix, entries);
-        return new Messages(entries);
+        collectMessages(file, "", entries);
+        return new Messages(file.string(MESSAGE_PREFIX, ""), entries);
     }
 
-    private static void collectMessages(@NotNull ConfigFile file, @NotNull String path, @NotNull String prefix,
+    private static void collectMessages(@NotNull ConfigFile file, @NotNull String path,
                                         @NotNull Map<String, String> sink) {
         for (String key : file.keys(path)) {
             String child = path.isEmpty() ? key : ConfigFile.join(path, key);
             if (file.isSection(child)) {
-                collectMessages(file, child, prefix, sink);
+                collectMessages(file, child, sink);
                 continue;
             }
-            sink.put(child, file.string(child, "").replace(PREFIX_TOKEN, prefix));
+            sink.put(child, file.string(child, ""));
         }
     }
 
@@ -157,16 +188,21 @@ public final class ConfigManager {
     public record Snapshot(@NotNull Settings settings, @NotNull Messages messages) {
     }
 
-    public record Messages(@NotNull Map<String, String> entries) {
+    public record Messages(@NotNull String prefix, @NotNull Map<String, String> entries) {
 
-        private static final @NotNull Messages EMPTY = new Messages(Map.of());
+        private static final @NotNull Messages EMPTY = new Messages("", Map.of());
 
         public Messages {
             entries = Map.copyOf(entries);
         }
 
         private @NotNull String raw(@NotNull String key) {
-            return entries.getOrDefault(key, key);
+            String value = entries.get(key);
+            if (value == null) {
+                Logger.warn("В messages.yml нет ключа '" + key + "'");
+                return "";
+            }
+            return value;
         }
     }
 }

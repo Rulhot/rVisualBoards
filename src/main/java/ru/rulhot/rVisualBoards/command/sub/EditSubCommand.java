@@ -9,7 +9,6 @@ import com.mojang.brigadier.context.CommandContext;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 import lombok.RequiredArgsConstructor;
-import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -31,7 +30,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.function.Function;
+import java.util.function.BiConsumer;
 import java.util.function.UnaryOperator;
 
 @RequiredArgsConstructor
@@ -120,12 +119,12 @@ public final class EditSubCommand implements SubCommand {
         Map<String, Object> placeholders = new HashMap<>(board.placeholders());
         List<String> boardTops = boardTops(board);
         placeholders.put("tops", tops.find(board.type()) == null
-                ? config.formatCommandMessage("edit.no-file", board.placeholders())
+                ? config.message("edit.no-file", board.placeholders())
                 : String.join(LIST_SEPARATOR, boardTops));
         placeholders.put("default-top", board.defaultTop() != null ? board.defaultTop()
                 : boardTops.isEmpty() ? "" : boardTops.getFirst());
-        sender.sendMessage(config.formatCommandMessage("edit.info", placeholders));
-        sender.sendMessage(config.formatCommandMessage("edit.help", Map.of("id", id)));
+        config.send(sender, "edit.info", placeholders);
+        config.send(sender, "edit.help", Map.of("id", id));
     }
 
     private void teleport(@NotNull CommandContext<CommandSourceStack> context) {
@@ -137,7 +136,7 @@ public final class EditSubCommand implements SubCommand {
         }
         World world = Bukkit.getWorld(board.world());
         if (world == null) {
-            sender.sendMessage(config.formatCommandMessage("edit.world-not-loaded", Map.of("world", board.world())));
+            config.send(sender, "edit.world-not-loaded", Map.of("world", board.world()));
             return;
         }
         double distance = TELEPORT_DISTANCE * board.scale();
@@ -153,7 +152,7 @@ public final class EditSubCommand implements SubCommand {
             return;
         }
         String message = success ? "edit.teleported" : "edit.teleport-failed";
-        scheduler.runFor(online, () -> online.sendMessage(config.formatCommandMessage(message, board.placeholders())));
+        scheduler.runFor(online, () -> config.send(online, message, board.placeholders()));
     }
 
     private void setDefaultTop(@NotNull CommandContext<CommandSourceStack> context) {
@@ -165,11 +164,11 @@ public final class EditSubCommand implements SubCommand {
             return;
         }
         if (!boardTops(board).contains(topId)) {
-            sender.sendMessage(config.formatCommandMessage("edit.top-missing", Map.of("id", id, "top", topId)));
+            config.send(sender, "edit.top-missing", Map.of("id", id, "top", topId));
             return;
         }
         editThen(context, edited -> edited.withDefaultTop(topId),
-                edited -> config.formatCommandMessage("edit.default-top", Map.of("id", id, "top", topId)));
+                (target, edited) -> config.send(target, "edit.default-top", Map.of("id", id, "top", topId)));
     }
 
     private void setType(@NotNull CommandContext<CommandSourceStack> context) {
@@ -187,19 +186,19 @@ public final class EditSubCommand implements SubCommand {
 
     private void edit(@NotNull CommandContext<CommandSourceStack> context, @NotNull String message,
                       @NotNull UnaryOperator<PlacedBoard> change) {
-        editThen(context, change, edited -> config.formatCommandMessage(message, edited.placeholders()));
+        editThen(context, change, (target, edited) -> config.send(target, message, edited.placeholders()));
     }
 
     private void editThen(@NotNull CommandContext<CommandSourceStack> context,
                           @NotNull UnaryOperator<PlacedBoard> change,
-                          @NotNull Function<PlacedBoard, Component> reply) {
+                          @NotNull BiConsumer<CommandSender, PlacedBoard> reply) {
         CommandSender sender = sender(context);
         if (!SubCommand.isReady(config, sender)) {
             return;
         }
         String id = SubCommand.boardId(context);
         switch (boards.edit(id, change)) {
-            case EditResult.Edited(PlacedBoard board) -> sender.sendMessage(reply.apply(board));
+            case EditResult.Edited(PlacedBoard board) -> reply.accept(sender, board);
             case EditResult.NotFound() -> notFound(sender, id);
         }
     }
@@ -223,7 +222,7 @@ public final class EditSubCommand implements SubCommand {
     }
 
     private void notFound(@NotNull CommandSender sender, @NotNull String id) {
-        sender.sendMessage(config.formatCommandMessage("general.board-not-found", Map.of("id", id)));
+        config.send(sender, "general.board-not-found", Map.of("id", id));
     }
 
     private static @NotNull CommandSender sender(@NotNull CommandContext<CommandSourceStack> context) {

@@ -32,8 +32,13 @@ public final class ReloadService {
 
     public void start() {
         load().thenAccept(result -> {
-            if (result instanceof Result.Failed) {
-                Logger.error("Табло не запущены из-за ошибки конфигурации: исправьте её и выполните /rvb reload");
+            switch (result) {
+                case Result.Success(int boards, int types) ->
+                        Logger.info("Табло загружено: " + boards + ", видов: " + types);
+                case Result.Failed() ->
+                        Logger.error("Табло не запущены: ошибка в конфиге. Исправь её и перезагрузи конфиг");
+                case Result.Busy() -> {
+                }
             }
         });
     }
@@ -64,7 +69,7 @@ public final class ReloadService {
                 try {
                     finish(result, apply(loaded));
                 } catch (RuntimeException exception) {
-                    Logger.error("Не удалось применить конфигурацию", exception);
+                    Logger.error("Не удалось применить конфигурацию, оставляю прежнюю", exception);
                     finish(result, new Result.Failed());
                 }
             });
@@ -84,7 +89,7 @@ public final class ReloadService {
             }
             return new Loaded(snapshot, types);
         } catch (RuntimeException exception) {
-            Logger.error("Не удалось загрузить конфигурацию", exception);
+            Logger.error("Не удалось загрузить конфигурацию, оставляю прежнюю", exception);
             return null;
         }
     }

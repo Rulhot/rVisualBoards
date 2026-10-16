@@ -175,13 +175,13 @@ public final class HologramManager {
     private void spawn(@NotNull Settings current, @NotNull PlacedBoard board) {
         World world = Bukkit.getWorld(board.world());
         if (world == null) {
-            Logger.warn("Табло пропущено, мир не загружен: board=" + board.id() + ", world=" + board.world());
+            Logger.warn("Табло '" + board.id() + "': мир '" + board.world() + "' не загружен, пропускаю");
             return;
         }
         BoardType type = tops.find(board.type());
         if (type == null) {
-            Logger.warn("Табло пропущено, нет файла tops/" + board.type() + ".yml: board=" + board.id()
-                    + " (выберите другой: /rvb edit " + board.id() + " type <вид>)");
+            Logger.warn("Табло '" + board.id() + "': нет файла tops/" + board.type() + ".yml, пропускаю. "
+                    + "Выбери другой вид через edit " + board.id() + " type");
             return;
         }
         HologramContext context = new HologramContext(plugin, scheduler, keys, selections, leaderboards, current,

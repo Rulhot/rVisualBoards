@@ -46,8 +46,8 @@ public interface SubCommand {
         if (tops.find(type) != null) {
             return type;
         }
-        context.getSource().getSender().sendMessage(config.formatCommandMessage("general.type-missing",
-                Map.of("type", type, "types", String.join(LIST_SEPARATOR, tops.ids()))));
+        config.send(context.getSource().getSender(), "general.type-missing",
+                Map.of("type", type, "types", String.join(LIST_SEPARATOR, tops.ids())));
         return null;
     }
 
@@ -68,7 +68,7 @@ public interface SubCommand {
         if (sender instanceof Player player) {
             return player;
         }
-        sender.sendMessage(config.getCommandMessage("general.player-only"));
+        config.send(sender, "general.player-only");
         return null;
     }
 
@@ -76,7 +76,7 @@ public interface SubCommand {
         if (config.settings() != null) {
             return true;
         }
-        sender.sendMessage(config.getCommandMessage("general.not-ready"));
+        config.send(sender, "general.not-ready");
         return false;
     }
 }

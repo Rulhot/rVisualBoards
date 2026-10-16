@@ -34,8 +34,8 @@ public final class CreateSubCommand implements SubCommand {
         return Commands.literal(NAME)
                 .then(Commands.argument(ID, StringArgumentType.word())
                         .executes(context -> {
-                            context.getSource().getSender().sendMessage(config.formatCommandMessage("create.no-type",
-                                    Map.of("id", id(context), "types", String.join(LIST_SEPARATOR, tops.ids()))));
+                            config.send(context.getSource().getSender(), "create.no-type",
+                                    Map.of("id", id(context), "types", String.join(LIST_SEPARATOR, tops.ids())));
                             return Command.SINGLE_SUCCESS;
                         })
                         .then(SubCommand.type(tops)
@@ -58,10 +58,10 @@ public final class CreateSubCommand implements SubCommand {
         String id = id(context);
         switch (boards.create(id, type, player)) {
             case CreateResult.Created(PlacedBoard board) ->
-                    sender.sendMessage(config.formatCommandMessage("create.success", board.placeholders()));
-            case CreateResult.InvalidId() -> sender.sendMessage(config.getCommandMessage("create.invalid-id"));
+                    config.send(sender, "create.success", board.placeholders());
+            case CreateResult.InvalidId() -> config.send(sender, "create.invalid-id");
             case CreateResult.AlreadyExists() ->
-                    sender.sendMessage(config.formatCommandMessage("create.exists", Map.of("id", id)));
+                    config.send(sender, "create.exists", Map.of("id", id));
         }
     }
 

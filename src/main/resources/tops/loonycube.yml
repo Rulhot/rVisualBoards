@@ -51,6 +51,7 @@ tops:
 ##      empty-place: "<#4fe08a>{place}"
 ##      empty-value: "<#45cf7d>--- <#fcfcfc>шт."
 
+# alltime, yearly, monthly, weekly, daily
 periods:
   - alltime
 period-names:
@@ -105,6 +106,7 @@ tabs:
   height: 0.24
   text-scale: 0.8
 
+# from и to: границы колонки по ширине табло, align: LEFT, CENTER, RIGHT
 columns:
   place:
     from: -2.75
@@ -119,6 +121,7 @@ columns:
     to: 2.75
     align: RIGHT
 
+# #AARRGGBB, первые две цифры задают прозрачность
 colors:
   title: "#70000000"
   header: "#80000000"

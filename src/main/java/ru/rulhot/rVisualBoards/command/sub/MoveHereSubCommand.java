@@ -41,9 +41,9 @@ public final class MoveHereSubCommand implements SubCommand {
         }
         switch (boards.moveTo(id, player)) {
             case EditResult.Edited(PlacedBoard board) ->
-                    sender.sendMessage(config.formatCommandMessage("movehere.success", board.placeholders()));
+                    config.send(sender, "movehere.success", board.placeholders());
             case EditResult.NotFound() ->
-                    sender.sendMessage(config.formatCommandMessage("general.board-not-found", Map.of("id", id)));
+                    config.send(sender, "general.board-not-found", Map.of("id", id));
         }
     }
 }

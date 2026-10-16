@@ -14,16 +14,16 @@ import java.util.List;
 @RequiredArgsConstructor
 public final class BoardCommand {
 
-    private static final @NotNull String PERMISSION = "rvisualboards.admin";
+    public static final @NotNull String ADMIN_PERMISSION = "rvisualboards.admin";
 
     private final @NotNull ConfigManager config;
     private final @NotNull List<SubCommand> subCommands;
 
     public @NotNull LiteralCommandNode<CommandSourceStack> build(@NotNull String label) {
         LiteralArgumentBuilder<CommandSourceStack> root = Commands.literal(label)
-                .requires(source -> source.getSender().hasPermission(PERMISSION))
+                .requires(source -> source.getSender().hasPermission(ADMIN_PERMISSION))
                 .executes(context -> {
-                    context.getSource().getSender().sendMessage(config.getCommandMessage("general.help"));
+                    config.send(context.getSource().getSender(), "general.help");
                     return Command.SINGLE_SUCCESS;
                 });
         for (SubCommand subCommand : subCommands) {

@@ -1,22 +1,22 @@
-update-interval-seconds: 10
-view-radius: 32.0
-snap-to-grid: true
-debug: false
+update-interval-seconds: 10 # как часто обновлять топы из ajLeaderboards
+view-radius: 32.0 # с какого расстояния игрок видит табло, в блоках
+snap-to-grid: true # ставить табло по центру блока и поворачивать кратно 90°
+debug: false # подробные логи для поиска проблем
 metrics: true
 update-check: true
 
 command:
   name: "rvb"
-  aliases:
-    - rvisualboards
+  aliases: [ rvisualboards ]
 
 clicks:
-  cooldown-millis: 300
+  cooldown-millis: 300 # пауза между кликами по кнопкам табло
   sound:
     key: "minecraft:ui.button.click"
     volume: 0.6
     pitch: 1.4
 
+# увеличение кнопок и строк, на которые смотрит игрок
 hover:
   buttons: true
   rows: true
@@ -25,17 +25,17 @@ hover:
   distance: 6.0
   duration-ticks: 3
 
+# листание мест сменой слота хотбара, пока игрок смотрит на строки
 scroll:
   enabled: true
-  max-places: 100
+  max-places: 100 # до какого места листать
   step: 1
   distance: 8.0
 
 animation:
   enabled: true
   appear: true
-  types:
-    - CASCADE
+  types: [ CASCADE ] # SLIDE_LEFT, SLIDE_RIGHT, ZOOM, CASCADE
   duration-ticks: 6
   stagger-ticks: 1
   distance: 0.6
@@ -43,6 +43,7 @@ animation:
 advanced:
   viewer-check-interval-ticks: 20
   hover-check-interval-ticks: 2
+  # шаблоны плейсхолдеров ajLeaderboards, {board} {place} {type} подставляет плагин
   placeholders:
     name: "%ajlb_lb_{board}_{place}_{type}_name%"
     prefix: "%ajlb_lb_{board}_{place}_{type}_prefix%"
@@ -50,6 +51,7 @@ advanced:
     position: "%ajlb_position_{board}_{type}%"
     personal-value: "%ajlb_value_{board}_{type}%"
     empty-name: "---"
+  # ширина символов в пикселях, если плагин неверно выравнивает их в колонках
   char-widths:
     "☠": 9
     "№": 9
@@ -65,4 +67,4 @@ advanced:
     "⚓": 9
     "⇧": 9
 
-config-version: 1
+config-version: 2 #не трогать!!!

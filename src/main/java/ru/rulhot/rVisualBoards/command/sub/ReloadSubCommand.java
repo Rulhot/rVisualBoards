@@ -5,7 +5,6 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 import lombok.RequiredArgsConstructor;
-import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -40,7 +39,7 @@ public final class ReloadSubCommand implements SubCommand {
     private void reload(@NotNull CommandSender sender) {
         if (!(sender instanceof Player player)) {
             reloads.reload().thenAccept(result ->
-                    scheduler.runGlobal(() -> sender.sendMessage(message(result))));
+                    scheduler.runGlobal(() -> reply(sender, result)));
             return;
         }
         UUID playerId = player.getUniqueId();
@@ -49,16 +48,16 @@ public final class ReloadSubCommand implements SubCommand {
             if (online == null) {
                 return;
             }
-            scheduler.runFor(online, () -> online.sendMessage(message(result)));
+            scheduler.runFor(online, () -> reply(online, result));
         });
     }
 
-    private @NotNull Component message(@NotNull Result result) {
-        return switch (result) {
+    private void reply(@NotNull CommandSender sender, @NotNull Result result) {
+        switch (result) {
             case Result.Success(int boards, int types) ->
-                    config.formatCommandMessage("reload.success", Map.of("boards", boards, "types", types));
-            case Result.Busy() -> config.getCommandMessage("reload.busy");
-            case Result.Failed() -> config.getCommandMessage("reload.failed");
-        };
+                    config.send(sender, "reload.success", Map.of("boards", boards, "types", types));
+            case Result.Busy() -> config.send(sender, "reload.busy");
+            case Result.Failed() -> config.send(sender, "reload.failed");
+        }
     }
 }

@@ -64,7 +64,7 @@ public final class TopManager {
             String name = BoardType.FOLDER + SEPARATOR + fileName;
             String id = PlacedBoard.normalizeId(fileName.substring(0, fileName.length() - EXTENSION.length()));
             if (!PlacedBoard.isValidId(id) || result.containsKey(id)) {
-                Logger.warn("[" + name + "] имя файла — латиница, цифры, _ и - (до 32 символов) и не повторяется, файл пропущен");
+                Logger.warn("[" + name + "] имя файла должно быть из латиницы, цифр, _ и - (до 32 символов) и не повторяться, пропускаю");
                 continue;
             }
             ConfigFile file = ConfigFile.read(path, name);
@@ -117,11 +117,11 @@ public final class TopManager {
         for (String key : file.keys(TopDefinition.TOPS)) {
             TopDefinition top = parseTop(file, key, defaults, placeholders, periods, periodNames);
             if (top != null && result.putIfAbsent(top.id(), top) != null) {
-                file.warn(ConfigFile.join(TopDefinition.TOPS, key), "топ с таким ID уже есть, пропущен");
+                file.warn(ConfigFile.join(TopDefinition.TOPS, key), "топ с таким ID уже есть, пропускаю");
             }
         }
         if (result.isEmpty()) {
-            Logger.warn("[" + file.name() + "] в секции " + TopDefinition.TOPS + " нет ни одного топа, файл пропущен");
+            Logger.warn("[" + file.name() + "] в секции " + TopDefinition.TOPS + " нет ни одного топа, пропускаю");
         }
         return List.copyOf(result.values());
     }
@@ -143,12 +143,12 @@ public final class TopManager {
                                                    @NotNull Map<Period, String> periodNames) {
         String path = ConfigFile.join(TopDefinition.TOPS, key);
         if (!file.isSection(path)) {
-            file.warn(path, "ожидается секция с настройками топа, пропущен");
+            file.warn(path, "ожидается секция с настройками топа, пропускаю");
             return null;
         }
         String board = file.string(ConfigFile.join(path, TopDefinition.BOARD), "").trim();
         if (board.isEmpty()) {
-            file.warn(ConfigFile.join(path, TopDefinition.BOARD), "не указан борд ajLeaderboards, топ пропущен");
+            file.warn(ConfigFile.join(path, TopDefinition.BOARD), "не указан борд ajLeaderboards, пропускаю");
             return null;
         }
         String id = key.toLowerCase(Locale.ROOT);
@@ -174,7 +174,7 @@ public final class TopManager {
             }
             String template = file.string(ConfigFile.join(path, key), "");
             if (template.isBlank() && Placeholders.REQUIRED_KEYS.contains(key)) {
-                file.warn(ConfigFile.join(path, key), "шаблон не может быть пустым, пропущен");
+                file.warn(ConfigFile.join(path, key), "шаблон не может быть пустым, пропускаю");
                 continue;
             }
             placeholders.put(key, template);

@@ -36,9 +36,9 @@ public final class RemoveSubCommand implements SubCommand {
     private void remove(@NotNull CommandSender sender, @NotNull String id) {
         switch (boards.remove(id)) {
             case RemoveResult.Removed(PlacedBoard board) ->
-                    sender.sendMessage(config.formatCommandMessage("remove.success", board.placeholders()));
+                    config.send(sender, "remove.success", board.placeholders());
             case RemoveResult.NotFound() ->
-                    sender.sendMessage(config.formatCommandMessage("general.board-not-found", Map.of("id", id)));
+                    config.send(sender, "general.board-not-found", Map.of("id", id));
         }
     }
 }
