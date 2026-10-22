@@ -26,6 +26,7 @@ public final class RemoveSubCommand implements SubCommand {
     @Override
     public @NotNull LiteralArgumentBuilder<CommandSourceStack> node() {
         return Commands.literal(NAME)
+                .executes(context -> SubCommand.usage(config, context, "remove.usage"))
                 .then(SubCommand.board(boards)
                         .executes(context -> {
                             remove(context.getSource().getSender(), SubCommand.boardId(context));
@@ -38,7 +39,7 @@ public final class RemoveSubCommand implements SubCommand {
             case RemoveResult.Removed(PlacedBoard board) ->
                     config.send(sender, "remove.success", board.placeholders());
             case RemoveResult.NotFound() ->
-                    config.send(sender, "general.board-not-found", Map.of("id", id));
+                    config.send(sender, "board-not-found", Map.of("id", id));
         }
     }
 }

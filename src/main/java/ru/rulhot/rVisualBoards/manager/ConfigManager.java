@@ -7,11 +7,14 @@ import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
 import ru.rulhot.rVisualBoards.model.Settings;
 import ru.rulhot.rVisualBoards.model.Settings.Advanced;
 import ru.rulhot.rVisualBoards.model.Settings.Animation;
 import ru.rulhot.rVisualBoards.model.Settings.AnimationType;
 import ru.rulhot.rVisualBoards.model.Settings.Clicks;
+import ru.rulhot.rVisualBoards.model.Settings.Effects;
+import ru.rulhot.rVisualBoards.model.Settings.Sounds;
 import ru.rulhot.rVisualBoards.model.Settings.Hover;
 import ru.rulhot.rVisualBoards.model.Settings.Placeholders;
 import ru.rulhot.rVisualBoards.model.Settings.Scroll;
@@ -19,6 +22,7 @@ import ru.rulhot.rVisualBoards.util.MessageUtil;
 import ru.rulhot.rVisualBoards.util.logger.Logger;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -33,6 +37,14 @@ public final class ConfigManager {
     private static final @NotNull Pattern HEX_TAG = Pattern.compile("</?#[0-9a-fA-F]{6}>");
     private static final @NotNull Map<String, String> CONSOLE_SYMBOLS = Map.of("»", ">", "•", "*");
     private static final @NotNull Set<String> PRESERVED_SETTINGS = Set.of(Advanced.CHAR_WIDTHS);
+    private static final @NotNull String LINE_BREAK = "\n";
+    private static final @NotNull Map<String, String> RENAMED_MESSAGES = Map.of(
+            "general.help", "help",
+            "general.player-only", "player-only",
+            "general.not-ready", "not-ready",
+            "general.board-not-found", "board-not-found",
+            "general.type-missing", "type-missing",
+            "reload.success", "reload.done");
 
     private final @NotNull JavaPlugin plugin;
 
@@ -41,8 +53,8 @@ public final class ConfigManager {
     private volatile @NotNull String command = Settings.Command.DEFAULT_NAME;
 
     public @Nullable Snapshot read() {
-        ConfigFile settingsFile = ConfigFile.load(plugin, Settings.FILE, PRESERVED_SETTINGS);
-        ConfigFile messagesFile = ConfigFile.load(plugin, MESSAGES_FILE, Set.of());
+        ConfigFile settingsFile = ConfigFile.load(plugin, Settings.FILE, PRESERVED_SETTINGS, Settings.RENAMED);
+        ConfigFile messagesFile = ConfigFile.load(plugin, MESSAGES_FILE, Set.of(), RENAMED_MESSAGES);
         if (settingsFile == null || messagesFile == null) {
             return null;
         }
@@ -59,7 +71,7 @@ public final class ConfigManager {
     }
 
     public @NotNull Startup readStartup() {
-        ConfigFile file = ConfigFile.load(plugin, Settings.FILE, PRESERVED_SETTINGS);
+        ConfigFile file = ConfigFile.load(plugin, Settings.FILE, PRESERVED_SETTINGS, Settings.RENAMED);
         if (file == null) {
             return new Startup(Settings.Command.DEFAULT, Settings.DEFAULT_METRICS, Settings.DEFAULT_UPDATE_CHECK);
         }
@@ -137,7 +149,13 @@ public final class ConfigManager {
                                 file.string(Placeholders.POSITION, Placeholders.DEFAULT_POSITION),
                                 file.string(Placeholders.PERSONAL_VALUE, Placeholders.DEFAULT_PERSONAL_VALUE),
                                 file.string(Placeholders.EMPTY_NAME, Placeholders.DEFAULT_EMPTY_NAME)),
-                        parseCharWidths(file)));
+                        parseCharWidths(file)),
+                new Effects(
+                        file.bool(Effects.WAVE, Effects.DEFAULT_WAVE),
+                        file.decimal(Effects.WAVE_HEIGHT, Effects.DEFAULT_WAVE_HEIGHT),
+                        file.integer(Effects.WAVE_STAGGER, Effects.DEFAULT_WAVE_STAGGER),
+                        file.integer(Effects.WAVE_DURATION, Effects.DEFAULT_WAVE_DURATION)),
+                new Sounds(file.sound(Sounds.HOVER), file.sound(Sounds.SWITCH)));
     }
 
     private static @NotNull Map<Integer, Integer> parseCharWidths(@NotNull ConfigFile file) {
@@ -178,7 +196,9 @@ public final class ConfigManager {
                 collectMessages(file, child, sink);
                 continue;
             }
-            sink.put(child, file.string(child, ""));
+            sink.put(child, file.isList(child)
+                    ? String.join(LINE_BREAK, file.stringList(child, List.of()))
+                    : file.string(child, ""));
         }
     }
 

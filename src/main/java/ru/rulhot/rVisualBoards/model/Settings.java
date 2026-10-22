@@ -20,17 +20,33 @@ public record Settings(
         @NotNull Hover hover,
         @NotNull Scroll scroll,
         @NotNull Animation animation,
-        @NotNull Advanced advanced
+        @NotNull Advanced advanced,
+        @NotNull Effects effects,
+        @NotNull Sounds sounds
 ) {
 
     public static final @NotNull String FILE = "config.yml";
 
-    public static final @NotNull String UPDATE_INTERVAL = "update-interval-seconds";
-    public static final @NotNull String VIEW_RADIUS = "view-radius";
-    public static final @NotNull String SNAP_TO_GRID = "snap-to-grid";
-    public static final @NotNull String DEBUG = "debug";
-    public static final @NotNull String METRICS = "metrics";
-    public static final @NotNull String UPDATE_CHECK = "update-check";
+    public static final @NotNull String UPDATE_INTERVAL = "performance.update-interval-seconds";
+    public static final @NotNull String VIEW_RADIUS = "performance.view-radius";
+    public static final @NotNull String SNAP_TO_GRID = "settings.snap-to-grid";
+    public static final @NotNull String DEBUG = "settings.debug";
+    public static final @NotNull String METRICS = "settings.metrics";
+    public static final @NotNull String UPDATE_CHECK = "settings.update-check";
+
+    public static final @NotNull Map<String, String> RENAMED = Map.ofEntries(
+            Map.entry("update-interval-seconds", UPDATE_INTERVAL),
+            Map.entry("view-radius", VIEW_RADIUS),
+            Map.entry("snap-to-grid", SNAP_TO_GRID),
+            Map.entry("debug", DEBUG),
+            Map.entry("metrics", METRICS),
+            Map.entry("update-check", UPDATE_CHECK),
+            Map.entry("command.name", "command.main"),
+            Map.entry("clicks.sound", "sounds.click"),
+            Map.entry("advanced.viewer-check-interval-ticks", "performance.viewer-check-interval-ticks"),
+            Map.entry("advanced.hover-check-interval-ticks", "performance.hover-check-interval-ticks"),
+            Map.entry("advanced.placeholders", "placeholders"),
+            Map.entry("advanced.char-widths", "char-widths"));
 
     public static final int DEFAULT_UPDATE_INTERVAL = 10;
     public static final double DEFAULT_VIEW_RADIUS = 32D;
@@ -52,6 +68,7 @@ public record Settings(
         updateIntervalSeconds = bounded(UPDATE_INTERVAL, updateIntervalSeconds, MIN_UPDATE_INTERVAL,
                 MAX_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL);
         viewRadius = bounded(VIEW_RADIUS, viewRadius, MIN_VIEW_RADIUS, MAX_VIEW_RADIUS, DEFAULT_VIEW_RADIUS);
+
     }
 
     public long updateIntervalTicks() {
@@ -60,7 +77,7 @@ public record Settings(
 
     public record Command(@NotNull String name, @NotNull List<String> aliases) {
 
-        public static final @NotNull String NAME = "command.name";
+        public static final @NotNull String NAME = "command.main";
         public static final @NotNull String ALIASES = "command.aliases";
 
         private static final @NotNull Pattern LABEL = Pattern.compile("[a-z0-9_-]{1,32}");
@@ -93,7 +110,7 @@ public record Settings(
     public record Clicks(int cooldownMillis, @Nullable Sound sound) {
 
         public static final @NotNull String COOLDOWN = "clicks.cooldown-millis";
-        public static final @NotNull String SOUND = "clicks.sound";
+        public static final @NotNull String SOUND = "sounds.click";
 
         public static final int DEFAULT_COOLDOWN = 300;
         public static final int MIN_COOLDOWN = 0;
@@ -203,6 +220,46 @@ public record Settings(
         }
     }
 
+    public record Effects(
+            boolean wave,
+            double waveHeight,
+            int waveStaggerTicks,
+            int waveDurationTicks
+    ) {
+
+        public static final @NotNull String WAVE = "effects.wave.enabled";
+        public static final @NotNull String WAVE_HEIGHT = "effects.wave.height";
+        public static final @NotNull String WAVE_STAGGER = "effects.wave.stagger-ticks";
+        public static final @NotNull String WAVE_DURATION = "effects.wave.duration-ticks";
+
+
+
+        public static final boolean DEFAULT_WAVE = true;
+        public static final double DEFAULT_WAVE_HEIGHT = 0.05D;
+        public static final int DEFAULT_WAVE_STAGGER = 1;
+        public static final int DEFAULT_WAVE_DURATION = 4;
+
+
+
+        public static final double MAX_HEIGHT = 1D;
+        public static final int MIN_TICKS = 1;
+        public static final int MAX_TICKS = 200;
+
+        public Effects {
+            waveHeight = bounded(WAVE_HEIGHT, waveHeight, 0D, MAX_HEIGHT, DEFAULT_WAVE_HEIGHT);
+            waveStaggerTicks = bounded(WAVE_STAGGER, waveStaggerTicks, 0, MAX_TICKS, DEFAULT_WAVE_STAGGER);
+            waveDurationTicks = bounded(WAVE_DURATION, waveDurationTicks, MIN_TICKS, MAX_TICKS, DEFAULT_WAVE_DURATION);
+
+
+        }
+    }
+
+    public record Sounds(@Nullable Sound hover, @Nullable Sound switchTop) {
+
+        public static final @NotNull String HOVER = "sounds.hover";
+        public static final @NotNull String SWITCH = "sounds.switch";
+    }
+
     public enum AnimationType {
         SLIDE_LEFT(false),
         SLIDE_RIGHT(false),
@@ -227,9 +284,9 @@ public record Settings(
             @NotNull Map<Integer, Integer> charWidths
     ) {
 
-        public static final @NotNull String VIEWER_CHECK_INTERVAL = "advanced.viewer-check-interval-ticks";
-        public static final @NotNull String HOVER_CHECK_INTERVAL = "advanced.hover-check-interval-ticks";
-        public static final @NotNull String CHAR_WIDTHS = "advanced.char-widths";
+        public static final @NotNull String VIEWER_CHECK_INTERVAL = "performance.viewer-check-interval-ticks";
+        public static final @NotNull String HOVER_CHECK_INTERVAL = "performance.hover-check-interval-ticks";
+        public static final @NotNull String CHAR_WIDTHS = "char-widths";
 
         public static final int DEFAULT_VIEWER_CHECK_INTERVAL = 20;
         public static final int DEFAULT_HOVER_CHECK_INTERVAL = 2;
@@ -259,12 +316,12 @@ public record Settings(
             @NotNull String emptyName
     ) {
 
-        public static final @NotNull String NAME = "advanced.placeholders.name";
-        public static final @NotNull String PREFIX = "advanced.placeholders.prefix";
-        public static final @NotNull String VALUE = "advanced.placeholders.value";
-        public static final @NotNull String POSITION = "advanced.placeholders.position";
-        public static final @NotNull String PERSONAL_VALUE = "advanced.placeholders.personal-value";
-        public static final @NotNull String EMPTY_NAME = "advanced.placeholders.empty-name";
+        public static final @NotNull String NAME = "placeholders.name";
+        public static final @NotNull String PREFIX = "placeholders.prefix";
+        public static final @NotNull String VALUE = "placeholders.value";
+        public static final @NotNull String POSITION = "placeholders.position";
+        public static final @NotNull String PERSONAL_VALUE = "placeholders.personal-value";
+        public static final @NotNull String EMPTY_NAME = "placeholders.empty-name";
 
         public static final @NotNull String DEFAULT_NAME = "%ajlb_lb_{board}_{place}_{type}_name%";
         public static final @NotNull String DEFAULT_PREFIX = "%ajlb_lb_{board}_{place}_{type}_prefix%";

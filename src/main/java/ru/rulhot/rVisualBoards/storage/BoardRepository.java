@@ -38,6 +38,7 @@ public final class BoardRepository {
     private static final @NotNull String YAW = "yaw";
     private static final @NotNull String SCALE = "scale";
     private static final @NotNull String DEFAULT_TOP = "default-top";
+    private static final @NotNull String HIDDEN = "hidden";
 
     private final @NotNull JavaPlugin plugin;
     private final @NotNull SchedulerUtil scheduler;
@@ -149,7 +150,8 @@ public final class BoardRepository {
                     section.getDouble(Z),
                     (float) section.getDouble(YAW),
                     readScale(id, section),
-                    defaultTop == null ? null : defaultTop.toLowerCase(Locale.ROOT)));
+                    defaultTop == null ? null : defaultTop.toLowerCase(Locale.ROOT),
+                    section.getBoolean(HIDDEN, false)));
         }
     }
 
@@ -180,6 +182,7 @@ public final class BoardRepository {
                 section.set(YAW, (double) board.yaw());
                 section.set(SCALE, board.scale());
                 section.set(DEFAULT_TOP, board.defaultTop());
+                section.set(HIDDEN, board.hidden() ? true : null);
             }
             File file = file();
             File parent = file.getParentFile();

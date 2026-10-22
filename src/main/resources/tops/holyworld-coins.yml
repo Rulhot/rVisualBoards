@@ -3,7 +3,7 @@ tops:
     board: vault_eco_balance
     title: "<#fb9f00>Топ по Монеткам"
 
-# alltime, yearly, monthly, weekly, daily
+# Периоды топа: alltime, yearly, monthly, weekly, daily
 periods:
   - alltime
 
@@ -32,7 +32,7 @@ table:
   shadow: true
   full-bright: true
 
-# from и to: границы колонки по ширине табло, align: LEFT, CENTER, RIGHT
+# Колонки. from и to: границы колонки по ширине табло, align: LEFT, CENTER, RIGHT
 columns:
   place:
     from: -3.15
@@ -47,7 +47,7 @@ columns:
     to: 3.15
     align: LEFT
 
-# #AARRGGBB, первые две цифры задают прозрачность
+# Цвета в формате #AARRGGBB, первые две цифры задают прозрачность
 colors:
   title: "#00000000"
   header: "#80000000"

@@ -16,6 +16,7 @@ import ru.rulhot.rVisualBoards.model.LeaderboardSnapshot.Standing;
 import ru.rulhot.rVisualBoards.model.TopDefinition;
 import ru.rulhot.rVisualBoards.model.TopDefinition.FormatKey;
 import ru.rulhot.rVisualBoards.model.TopDefinition.Period;
+
 import ru.rulhot.rVisualBoards.util.MessageUtil;
 
 import java.util.ArrayList;
@@ -39,8 +40,10 @@ final class HologramRenderer {
     private static final @NotNull String POSITION = "position";
     private static final @NotNull String LABEL = "label";
     private static final @NotNull String PERIOD = "period";
+
     private static final @NotNull Color TRANSPARENT = Color.fromARGB(0, 0, 0, 0);
     private static final long NO_VERSION = 0L;
+
 
     private final @NotNull HologramContext context;
     private final @NotNull List<TopDefinition> tops;
@@ -91,11 +94,15 @@ final class HologramRenderer {
         }
     }
 
-    void refreshRows(@NotNull HologramView view, @NotNull TopDefinition top) {
-        if (view.isRendered(key(view, top), versionOf(snapshot(view, top)))) {
-            return;
+    boolean refreshRows(@NotNull HologramView view, @NotNull TopDefinition top) {
+        Key key = key(view, top);
+        LeaderboardSnapshot snapshot = snapshot(view, top);
+        if (view.isRendered(key, versionOf(snapshot))) {
+            return false;
         }
+        boolean update = view.showsSame(key) && view.hasData();
         renderRows(view, top);
+        return update;
     }
 
     boolean canScroll(@NotNull HologramView view, @NotNull TopDefinition top, int delta) {
@@ -106,6 +113,7 @@ final class HologramRenderer {
         view.scrollOffset(view.scrollOffset() + delta);
         renderRows(view, top);
     }
+
 
     void renderStanding(@NotNull HologramView view, @NotNull TopDefinition top, @NotNull String viewerName) {
         List<Cell> cells = view.standing();
@@ -145,6 +153,7 @@ final class HologramRenderer {
                         cycle == ButtonAction.Cycle.NEXT ? FormatKey.ARROW_RIGHT : FormatKey.ARROW_LEFT)));
                 case ButtonAction.Slot slot -> renderSlot(view, selected, button, slot, labelScale);
                 case ButtonAction.PeriodTab tab -> renderTab(view, selected, button, tab, tabScale);
+
             }
         }
     }
@@ -174,9 +183,9 @@ final class HologramRenderer {
         recolor(button, active ? colors.tabSelected() : colors.tab());
     }
 
+
     private static void recolor(@NotNull Button button, @NotNull Color color) {
-        HologramPart panel = button.panel();
-        if (panel != null) {
+        for (HologramPart panel : button.panels()) {
             panel.recolor(color);
         }
     }
@@ -255,6 +264,7 @@ final class HologramRenderer {
                            @Nullable LeaderboardSnapshot snapshot, int slot) {
         List<Cell> row = view.rows().get(slot - 1);
         int place = view.scrollOffset() + slot;
+
         List<CellText> texts = rowTexts(top, view.period(), snapshot, place);
         double bottom = geometry.rowBottom(slot);
         for (int index = 0; index < row.size(); index++) {

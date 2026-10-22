@@ -48,11 +48,12 @@ record BoardGeometry(
         int count = buttons.enabled() && topCount > 1 ? Math.min(topCount, buttons.visible()) : 0;
         int arrowCount = count > 0 && buttons.arrows() ? ARROW_COUNT : 0;
         int tabCount = tabs.enabled() && periodCount >= MIN_TABS ? periodCount : 0;
+        boolean onSide = buttons.side() != BoardLayout.Buttons.Side.BOTTOM;
         double arrowsWidth = arrowCount * (buttons.arrowWidth() + spacing.buttonsGap());
-        double buttonWidth = count == 0 ? 0D : Math.max(MIN_BUTTON_WIDTH,
+        double buttonWidth = count == 0 ? 0D : onSide ? buttons.sideWidth() : Math.max(MIN_BUTTON_WIDTH,
                 (table.width() - arrowsWidth - spacing.buttonsGap() * (count - 1)) / count);
         double buttonsBottom = spacing.padding();
-        double standingBottom = count == 0
+        double standingBottom = count == 0 || onSide
                 ? buttonsBottom
                 : buttonsBottom + buttons.height() + spacing.buttonsMargin();
         double tableBottom = table.personalRow() ? standingBottom + line + spacing.buttonsMargin() : standingBottom;
@@ -66,12 +67,15 @@ record BoardGeometry(
         double height = titleBottom + spacing.titleHeight() + spacing.padding();
 
         List<Box> boxes = new ArrayList<>();
+        if (onSide) {
+            sideColumn(boxes, buttons, spacing, table.width(), count, arrowCount, (rowsBottom + tableTop) / 2D);
+        }
         double used = buttonWidth * count + spacing.buttonsGap() * (count - 1);
-        for (int index = 0; index < count; index++) {
+        for (int index = 0; index < count && !onSide; index++) {
             double x = -used / 2D + buttonWidth / 2D + index * (buttonWidth + spacing.buttonsGap());
             boxes.add(new Box(x, buttonsBottom, buttonWidth, buttons.height()));
         }
-        if (arrowCount > 0) {
+        if (arrowCount > 0 && !onSide) {
             double arrowX = table.width() / 2D - buttons.arrowWidth() / 2D;
             boxes.add(new Box(-arrowX, buttonsBottom, buttons.arrowWidth(), buttons.height()));
             boxes.add(new Box(arrowX, buttonsBottom, buttons.arrowWidth(), buttons.height()));
@@ -85,6 +89,25 @@ record BoardGeometry(
         }
         return new BoardGeometry(table.width(), line, table.rows(), count, arrowCount, tabCount, buttonWidth, boxes,
                 standingBottom, tableBottom, rowsBottom, tableTop, headerBottom, tabsBottom, titleBottom, height);
+    }
+
+    private static void sideColumn(@NotNull List<Box> boxes, @NotNull BoardLayout.Buttons buttons,
+                                   @NotNull BoardLayout.Spacing spacing, double tableWidth, int count,
+                                   int arrowCount, double centerY) {
+        double width = buttons.sideWidth();
+        double step = buttons.height() + spacing.buttonsGap();
+        int cells = count + arrowCount;
+        double top = centerY + (cells * step - spacing.buttonsGap()) / 2D;
+        double sign = buttons.side() == BoardLayout.Buttons.Side.LEFT ? -1D : 1D;
+        double x = sign * (tableWidth / 2D + spacing.buttonsMargin() + width / 2D);
+        int first = arrowCount > 0 ? 1 : 0;
+        for (int index = 0; index < count; index++) {
+            boxes.add(new Box(x, top - (first + index + 1) * step + spacing.buttonsGap(), width, buttons.height()));
+        }
+        if (arrowCount > 0) {
+            boxes.add(new Box(x, top - step + spacing.buttonsGap(), width, buttons.height()));
+            boxes.add(new Box(x, top - cells * step + spacing.buttonsGap(), width, buttons.height()));
+        }
     }
 
     static double textBottom(double boxBottom, double boxHeight, double scale) {
@@ -109,6 +132,7 @@ record BoardGeometry(
         int slot = rows - (int) ((y - rowsBottom) / line);
         return slot < 1 ? NO_ROW : slot;
     }
+
 
     boolean isOnRows(double x, double y) {
         return Math.abs(x) <= width / 2D && y >= tableBottom && y <= tableTop;

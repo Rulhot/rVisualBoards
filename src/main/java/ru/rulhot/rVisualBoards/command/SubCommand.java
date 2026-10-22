@@ -1,5 +1,6 @@
 package ru.rulhot.rVisualBoards.command;
 
+import com.mojang.brigadier.Command;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
@@ -46,7 +47,7 @@ public interface SubCommand {
         if (tops.find(type) != null) {
             return type;
         }
-        config.send(context.getSource().getSender(), "general.type-missing",
+        config.send(context.getSource().getSender(), "type-missing",
                 Map.of("type", type, "types", String.join(LIST_SEPARATOR, tops.ids())));
         return null;
     }
@@ -68,15 +69,21 @@ public interface SubCommand {
         if (sender instanceof Player player) {
             return player;
         }
-        config.send(sender, "general.player-only");
+        config.send(sender, "player-only");
         return null;
+    }
+
+    static int usage(@NotNull ConfigManager config, @NotNull CommandContext<CommandSourceStack> context,
+                     @NotNull String key) {
+        config.send(context.getSource().getSender(), key);
+        return Command.SINGLE_SUCCESS;
     }
 
     static boolean isReady(@NotNull ConfigManager config, @NotNull CommandSender sender) {
         if (config.settings() != null) {
             return true;
         }
-        config.send(sender, "general.not-ready");
+        config.send(sender, "not-ready");
         return false;
     }
 }

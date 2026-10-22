@@ -2,6 +2,7 @@ package ru.rulhot.rVisualBoards.model;
 
 import org.jetbrains.annotations.NotNull;
 
+
 import java.util.List;
 
 public record BoardType(@NotNull String id, @NotNull BoardLayout layout, @NotNull List<TopDefinition> tops) {

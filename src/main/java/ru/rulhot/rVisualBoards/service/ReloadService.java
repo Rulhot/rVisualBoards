@@ -27,6 +27,7 @@ public final class ReloadService {
     private final @NotNull LeaderboardService leaderboards;
     private final @NotNull HologramManager holograms;
 
+
     private final @NotNull AtomicBoolean reloading = new AtomicBoolean();
     private volatile boolean shutdown;
 
@@ -110,6 +111,7 @@ public final class ReloadService {
                 .max()
                 .orElse(0);
         leaderboards.start(settings, allTops, places);
+
         holograms.start();
         Logger.debug("Конфигурация применена: boards=" + holograms.size() + ", types=" + loaded.types().size());
         return new Result.Success(holograms.size(), loaded.types().size());

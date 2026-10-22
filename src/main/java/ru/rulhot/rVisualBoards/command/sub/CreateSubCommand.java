@@ -32,6 +32,7 @@ public final class CreateSubCommand implements SubCommand {
     @Override
     public @NotNull LiteralArgumentBuilder<CommandSourceStack> node() {
         return Commands.literal(NAME)
+                .executes(context -> SubCommand.usage(config, context, "create.usage"))
                 .then(Commands.argument(ID, StringArgumentType.word())
                         .executes(context -> {
                             config.send(context.getSource().getSender(), "create.no-type",

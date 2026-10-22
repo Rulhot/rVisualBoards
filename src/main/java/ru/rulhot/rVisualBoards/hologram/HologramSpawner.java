@@ -12,6 +12,7 @@ import ru.rulhot.rVisualBoards.hologram.HologramView.Group;
 import ru.rulhot.rVisualBoards.hologram.HologramView.GroupKind;
 import ru.rulhot.rVisualBoards.model.BoardLayout;
 import ru.rulhot.rVisualBoards.model.BoardLayout.Column;
+
 import ru.rulhot.rVisualBoards.model.TopDefinition.Period;
 
 import java.util.ArrayList;
@@ -28,6 +29,7 @@ final class HologramSpawner {
     private static final @NotNull String SPACE = " ";
     private static final @NotNull String LINE_BREAK = "\n";
     private static final @NotNull Color TRANSPARENT = Color.fromARGB(0, 0, 0, 0);
+
 
     private final @NotNull HologramContext context;
     private final @NotNull String boardId;
@@ -117,13 +119,18 @@ final class HologramSpawner {
         List<PacketHitbox> hitboxes = new ArrayList<>();
         for (int index = 0; index < geometry.boxCount(); index++) {
             BoardGeometry.Box box = geometry.box(index);
-            ButtonAction action = actionAt(index);
-            PacketHitbox hitbox = new PacketHitbox(viewer, frame.point(box.x(), box.bottom(), 0D),
-                    (float) (box.width() * frame.scale()), (float) (box.height() * frame.scale()), box, action);
-            context.hitboxes().register(hitbox.entityId(), new HitboxRegistry.Target(boardId, action, viewerId));
-            hitboxes.add(hitbox);
+            hitboxes.add(hitbox(viewer, frame, viewerId, box, actionAt(index)));
         }
+
         return hitboxes;
+    }
+
+    private @NotNull PacketHitbox hitbox(@NotNull User viewer, @NotNull BoardFrame frame, @NotNull UUID viewerId,
+                                         @NotNull BoardGeometry.Box box, @NotNull ButtonAction action) {
+        PacketHitbox hitbox = new PacketHitbox(viewer, frame.point(box.x(), box.bottom(), 0D),
+                (float) (box.width() * frame.scale()), (float) (box.height() * frame.scale()), box, action);
+        context.hitboxes().register(hitbox.entityId(), new HitboxRegistry.Target(boardId, action, viewerId));
+        return hitbox;
     }
 
     private @NotNull List<Button> spawnButtons(@NotNull User viewer, @NotNull BoardFrame frame) {
@@ -149,6 +156,8 @@ final class HologramSpawner {
                                    @NotNull BoardGeometry.Box box) {
         Color fill = switch (action) {
             case ButtonAction.Slot slot -> colors.button();
+
+
             case ButtonAction.Cycle cycle -> colors.arrow();
             case ButtonAction.PeriodTab tab -> colors.tab();
         };
@@ -156,7 +165,7 @@ final class HologramSpawner {
         HologramPart panel = panel(viewer, frame, box.x(), box.bottom(), spacing.depthStep(), box.width(), box.height(), fill);
         double labelBottom = BoardGeometry.textBottom(box.bottom(), box.height(), scale);
         HologramPart label = text(viewer, frame, box.x(), labelBottom, textDepth(), scale, TextDisplay.TextAlignment.CENTER);
-        return new Button(action, box, panel, label);
+        return new Button(action, box, List.of(panel), label);
     }
 
     private @NotNull List<Cell> cells(@NotNull User viewer, @NotNull BoardFrame frame, double bottom) {

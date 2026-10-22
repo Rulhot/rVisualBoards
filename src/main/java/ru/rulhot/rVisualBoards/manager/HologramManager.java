@@ -20,6 +20,7 @@ import ru.rulhot.rVisualBoards.model.PlacedBoard;
 import ru.rulhot.rVisualBoards.model.Settings;
 import ru.rulhot.rVisualBoards.service.LeaderboardService;
 import ru.rulhot.rVisualBoards.storage.BoardRepository;
+import ru.rulhot.rVisualBoards.util.PlayerCommands;
 import ru.rulhot.rVisualBoards.util.SchedulerUtil;
 import ru.rulhot.rVisualBoards.util.logger.Logger;
 
@@ -46,6 +47,7 @@ public final class HologramManager {
 
     private volatile @Nullable Settings settings;
 
+
     public void start() {
         Settings current = config.settings();
         if (current == null) {
@@ -56,6 +58,7 @@ public final class HologramManager {
         for (PlacedBoard board : boards.all()) {
             spawn(current, board);
         }
+
         Logger.debug("Табло запущены: boards=" + holograms.size());
     }
 
@@ -134,8 +137,54 @@ public final class HologramManager {
             return;
         }
         lastClicks.put(viewerId, now);
-        if (!hologram.select(player, action)) {
+        BoardHologram.Selected selected = hologram.select(player, action);
+        if (selected == null) {
             return;
+        }
+        Sound sound = current.clicks().sound();
+        if (selected.topChanged()) {
+            Sound topSound = selected.top().switchSound();
+            Sound switchSound = topSound != null ? topSound : current.sounds().switchTop();
+            sound = switchSound != null ? switchSound : sound;
+        }
+        if (sound != null) {
+            player.playSound(sound);
+        }
+    }
+
+    public void clickRow(@NotNull Player player) {
+        Settings current = settings;
+        if (current == null) {
+            return;
+        }
+        BoardHologram.RowClick click = null;
+        for (BoardHologram hologram : holograms.values()) {
+            click = hologram.clickRow(player);
+            if (click != null) {
+                break;
+            }
+        }
+        if (click == null) {
+            return;
+        }
+        UUID viewerId = player.getUniqueId();
+        long now = System.currentTimeMillis();
+        Long last = lastClicks.get(viewerId);
+        if (last != null && now - last < current.clicks().cooldownMillis()) {
+            return;
+        }
+        lastClicks.put(viewerId, now);
+        String name = click.entry().name();
+        if (!PlayerCommands.isSafeName(name)) {
+            Logger.debug("Клик по строке пропущен, странный ник в топе: " + name);
+            return;
+        }
+        for (String line : click.top().rowClick()) {
+            PlayerCommands.run(scheduler, player, line
+                    .replace("{name}", name)
+                    .replace("{place}", String.valueOf(click.entry().place()))
+                    .replace("{player}", player.getName())
+                    .replace("{top}", click.top().id()));
         }
         Sound sound = current.clicks().sound();
         if (sound != null) {
@@ -173,6 +222,10 @@ public final class HologramManager {
     }
 
     private void spawn(@NotNull Settings current, @NotNull PlacedBoard board) {
+        if (board.hidden()) {
+            despawn(board.id());
+            return;
+        }
         World world = Bukkit.getWorld(board.world());
         if (world == null) {
             Logger.warn("Табло '" + board.id() + "': мир '" + board.world() + "' не загружен, пропускаю");

@@ -27,6 +27,7 @@ public final class MoveHereSubCommand implements SubCommand {
     @Override
     public @NotNull LiteralArgumentBuilder<CommandSourceStack> node() {
         return Commands.literal(NAME)
+                .executes(context -> SubCommand.usage(config, context, "movehere.usage"))
                 .then(SubCommand.board(boards)
                         .executes(context -> {
                             move(context.getSource().getSender(), SubCommand.boardId(context));
@@ -43,7 +44,7 @@ public final class MoveHereSubCommand implements SubCommand {
             case EditResult.Edited(PlacedBoard board) ->
                     config.send(sender, "movehere.success", board.placeholders());
             case EditResult.NotFound() ->
-                    config.send(sender, "general.board-not-found", Map.of("id", id));
+                    config.send(sender, "board-not-found", Map.of("id", id));
         }
     }
 }

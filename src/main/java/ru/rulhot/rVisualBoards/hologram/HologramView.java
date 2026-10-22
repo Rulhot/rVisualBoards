@@ -46,8 +46,11 @@ final class HologramView {
     private volatile int buttonOffset;
     private @Nullable Standing renderedStanding;
     private @Nullable Key renderedStandingKey;
+
     private int hoveredButton = BoardGeometry.NO_BUTTON;
     private int hoveredRow = BoardGeometry.NO_ROW;
+    private int hintedRow = BoardGeometry.NO_ROW;
+
 
     HologramView(@NotNull User viewer, @NotNull BoardFrame frame, @NotNull UUID viewerId, @NotNull String topId,
                  @NotNull Period period, @NotNull HologramPart title, @Nullable HologramPart subtitle,
@@ -68,6 +71,7 @@ final class HologramView {
         this.standing = List.copyOf(standing);
         this.buttons = List.copyOf(buttons);
         this.groups = List.copyOf(groups);
+
         this.entityIds = IntStream.concat(
                         Stream.concat(
                                         groups.stream().flatMap(group -> group.parts().stream()),
@@ -136,6 +140,32 @@ final class HologramView {
 
     int nextGeneration() {
         return generation.incrementAndGet();
+    }
+
+    int generation() {
+        return generation.get();
+    }
+
+    boolean isDetached() {
+        return detached;
+    }
+
+
+
+    boolean hasData() {
+        return renderedVersion > 0L;
+    }
+
+    boolean showsSame(@NotNull Key key) {
+        return key.equals(renderedKey) && scrollOffset == renderedOffset;
+    }
+
+    int hintedRow() {
+        return hintedRow;
+    }
+
+    void hintedRow(int slot) {
+        hintedRow = slot;
     }
 
     boolean isCurrent(int expected) {
@@ -222,11 +252,15 @@ final class HologramView {
     record Group(@NotNull GroupKind kind, int slot, @NotNull List<HologramPart> parts) {
     }
 
-    record Button(@NotNull ButtonAction action, @NotNull BoardGeometry.Box box, @Nullable HologramPart panel,
+    record Button(@NotNull ButtonAction action, @NotNull BoardGeometry.Box box, @NotNull List<HologramPart> panels,
                   @NotNull HologramPart label) {
 
+        Button {
+            panels = List.copyOf(panels);
+        }
+
         @NotNull List<HologramPart> parts() {
-            return panel == null ? List.of(label) : List.of(panel, label);
+            return Stream.concat(panels.stream(), Stream.of(label)).toList();
         }
     }
 

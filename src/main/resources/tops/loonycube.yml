@@ -4,6 +4,11 @@ tops:
     label: "Баланс"
     title: "<gradient:#f59e5b:#f5c05b>Топ по монетам"
     button-color: "#B3402709"
+    # Свой звук при переключении на этот топ, вместо sounds.switch из config.yml
+    # switch-sound:
+    #   key: "minecraft:entity.experience_orb.pickup"
+    #   volume: 0.6
+    #   pitch: 1.2
     formats:
       header-value: "<#a6a6a6>Баланс"
       row-place: "<#f9ce5c>{place}"
@@ -51,7 +56,12 @@ tops:
 ##      empty-place: "<#4fe08a>{place}"
 ##      empty-value: "<#45cf7d>--- <#fcfcfc>шт."
 
-# alltime, yearly, monthly, weekly, daily
+# Что делать по клику ЛКМ на строку топа: {name} ник из строки, {place} место, {player} кто кликнул, {top} ID топа.
+# С console: в начале команда выполнится от консоли, иначе от игрока. Пустой список выключает клик.
+# У топа может быть свой список: tops.balance.row-click
+row-click: [] # например [ "profile {name}", "console:msg {player} {name} на {place} месте" ]
+
+# Периоды топа: alltime, yearly, monthly, weekly, daily
 periods:
   - alltime
 period-names:
@@ -83,6 +93,9 @@ formats:
   arrow-right: "<white>▶"
   tab: "<gray>{period}"
   tab-selected: "<white>{period}"
+  # Подсказка над хотбаром при наведении, пусто: без подсказки. В hint-row есть {name} и {place}
+  hint-row: ""
+  hint-button: ""
 
 table:
   width: 5.5
@@ -100,13 +113,15 @@ buttons:
   height: 0.3
   text-scale: 1.0
   arrow-width: 0.2
+  side: BOTTOM # где кнопки и стрелки: BOTTOM под таблицей, LEFT или RIGHT столбиком сбоку
+  side-width: 1.2 # ширина столбика, если side: LEFT или RIGHT
 
 tabs:
   enabled: false
   height: 0.24
   text-scale: 0.8
 
-# from и to: границы колонки по ширине табло, align: LEFT, CENTER, RIGHT
+# Колонки. from и to: границы колонки по ширине табло, align: LEFT, CENTER, RIGHT
 columns:
   place:
     from: -2.75
@@ -121,7 +136,7 @@ columns:
     to: 2.75
     align: RIGHT
 
-# #AARRGGBB, первые две цифры задают прозрачность
+# Цвета в формате #AARRGGBB, первые две цифры задают прозрачность
 colors:
   title: "#70000000"
   header: "#80000000"

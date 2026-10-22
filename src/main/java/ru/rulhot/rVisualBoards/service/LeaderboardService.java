@@ -60,6 +60,7 @@ public final class LeaderboardService {
         for (TopDefinition top : tops) {
             boards.add(top.board());
             defaults.add(new Key(top.board(), top.defaultPeriod()));
+
             if (!top.placeholders().isEmpty()) {
                 placeholders.put(top.board(), settings.advanced().placeholders().with(top.placeholders()));
             }

@@ -55,7 +55,7 @@ public final class ReloadSubCommand implements SubCommand {
     private void reply(@NotNull CommandSender sender, @NotNull Result result) {
         switch (result) {
             case Result.Success(int boards, int types) ->
-                    config.send(sender, "reload.success", Map.of("boards", boards, "types", types));
+                    config.send(sender, "reload.done", Map.of("boards", boards, "types", types));
             case Result.Busy() -> config.send(sender, "reload.busy");
             case Result.Failed() -> config.send(sender, "reload.failed");
         }

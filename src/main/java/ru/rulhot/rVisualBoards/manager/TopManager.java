@@ -14,17 +14,20 @@ import ru.rulhot.rVisualBoards.model.BoardLayout.Spacing;
 import ru.rulhot.rVisualBoards.model.BoardLayout.Tabs;
 import ru.rulhot.rVisualBoards.model.BoardLayout.Table;
 import ru.rulhot.rVisualBoards.model.BoardType;
+
 import ru.rulhot.rVisualBoards.model.PlacedBoard;
 import ru.rulhot.rVisualBoards.model.Settings.Placeholders;
 import ru.rulhot.rVisualBoards.model.TopDefinition;
 import ru.rulhot.rVisualBoards.model.TopDefinition.FormatKey;
 import ru.rulhot.rVisualBoards.model.TopDefinition.Period;
+
 import ru.rulhot.rVisualBoards.util.logger.Logger;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.LinkedHashMap;
@@ -113,9 +116,10 @@ public final class TopManager {
         Map<String, String> placeholders = parsePlaceholders(file, TopDefinition.PLACEHOLDERS, Map.of());
         List<Period> periods = file.enumList(TopDefinition.PERIODS, Period.class, TopDefinition.DEFAULT_PERIODS);
         Map<Period, String> periodNames = parsePeriodNames(file);
+        List<String> rowClick = file.stringList(TopDefinition.ROW_CLICK, List.of());
         Map<String, TopDefinition> result = new LinkedHashMap<>();
         for (String key : file.keys(TopDefinition.TOPS)) {
-            TopDefinition top = parseTop(file, key, defaults, placeholders, periods, periodNames);
+            TopDefinition top = parseTop(file, key, defaults, placeholders, periods, periodNames, rowClick);
             if (top != null && result.putIfAbsent(top.id(), top) != null) {
                 file.warn(ConfigFile.join(TopDefinition.TOPS, key), "топ с таким ID уже есть, пропускаю");
             }
@@ -140,7 +144,8 @@ public final class TopManager {
                                                    @NotNull Map<FormatKey, String> defaults,
                                                    @NotNull Map<String, String> placeholders,
                                                    @NotNull List<Period> periods,
-                                                   @NotNull Map<Period, String> periodNames) {
+                                                   @NotNull Map<Period, String> periodNames,
+                                                   @NotNull List<String> rowClick) {
         String path = ConfigFile.join(TopDefinition.TOPS, key);
         if (!file.isSection(path)) {
             file.warn(path, "ожидается секция с настройками топа, пропускаю");
@@ -161,7 +166,9 @@ public final class TopManager {
                 file.optionalColor(ConfigFile.join(path, TopDefinition.BUTTON_COLOR)),
                 parseFormats(file, ConfigFile.join(path, TopDefinition.FORMATS), defaults),
                 parsePlaceholders(file, ConfigFile.join(path, TopDefinition.PLACEHOLDERS), placeholders),
-                periodNames);
+                periodNames,
+                file.stringList(ConfigFile.join(path, TopDefinition.ROW_CLICK), rowClick),
+                file.sound(ConfigFile.join(path, TopDefinition.SWITCH_SOUND)));
     }
 
     private static @NotNull Map<String, String> parsePlaceholders(@NotNull ConfigFile file, @NotNull String path,
@@ -217,7 +224,10 @@ public final class TopManager {
                 file.bool(Buttons.ARROWS, Buttons.DEFAULT_ARROWS),
                 height(file, Buttons.HEIGHT, Buttons.DEFAULT_HEIGHT),
                 scale(file, Buttons.TEXT_SCALE, Buttons.DEFAULT_TEXT_SCALE),
-                height(file, Buttons.ARROW_WIDTH, Buttons.DEFAULT_ARROW_WIDTH));
+                height(file, Buttons.ARROW_WIDTH, Buttons.DEFAULT_ARROW_WIDTH),
+                file.enumValue(Buttons.SIDE, Buttons.Side.class, Buttons.DEFAULT_SIDE),
+                file.decimal(Buttons.SIDE_WIDTH, Buttons.DEFAULT_SIDE_WIDTH, Buttons.MIN_SIDE_WIDTH,
+                        Buttons.MAX_SIDE_WIDTH));
     }
 
     private static @NotNull Tabs parseTabs(@NotNull ConfigFile file) {

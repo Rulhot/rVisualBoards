@@ -61,13 +61,23 @@ public final class EditSubCommand implements SubCommand {
                 .then(move())
                 .then(Commands.literal("tp").executes(context -> done(() -> teleport(context))))
                 .then(defaultTop())
-                .then(Commands.literal(TYPE).then(SubCommand.type(tops)
+                .then(Commands.literal("hide").executes(context -> done(() -> edit(context, "edit.hidden",
+                        current -> current.withHidden(true)))))
+                .then(Commands.literal("show").executes(context -> done(() -> edit(context, "edit.shown",
+                        current -> current.withHidden(false)))))
+                .then(Commands.literal(TYPE).executes(this::help).then(SubCommand.type(tops)
                         .executes(context -> done(() -> setType(context)))));
-        return Commands.literal(NAME).then(board);
+        return Commands.literal(NAME).executes(context -> SubCommand.usage(config, context, "edit.usage"))
+                .then(board);
+    }
+
+    private int help(@NotNull CommandContext<CommandSourceStack> context) {
+        config.send(sender(context), "edit.help", Map.of("id", SubCommand.boardId(context)));
+        return Command.SINGLE_SUCCESS;
     }
 
     private @NotNull LiteralArgumentBuilder<CommandSourceStack> rotate() {
-        return Commands.literal("rotate")
+        return Commands.literal("rotate").executes(this::help)
                 .then(Commands.argument(DEGREES, DoubleArgumentType.doubleArg(0D, FULL_TURN))
                         .executes(context -> done(() -> edit(context, "edit.rotated",
                                 current -> current.rotatedTo(DoubleArgumentType.getDouble(context, DEGREES))))));
@@ -86,16 +96,16 @@ public final class EditSubCommand implements SubCommand {
     }
 
     private @NotNull LiteralArgumentBuilder<CommandSourceStack> scale() {
-        return Commands.literal("scale")
+        return Commands.literal("scale").executes(this::help)
                 .then(Commands.argument(FACTOR, DoubleArgumentType.doubleArg(PlacedBoard.MIN_SCALE, PlacedBoard.MAX_SCALE))
                         .executes(context -> done(() -> edit(context, "edit.scaled",
                                 current -> current.withScale(DoubleArgumentType.getDouble(context, FACTOR))))));
     }
 
     private @NotNull LiteralArgumentBuilder<CommandSourceStack> move() {
-        LiteralArgumentBuilder<CommandSourceStack> move = Commands.literal("move");
+        LiteralArgumentBuilder<CommandSourceStack> move = Commands.literal("move").executes(this::help);
         for (Direction direction : Direction.values()) {
-            move.then(Commands.literal(direction.key())
+            move.then(Commands.literal(direction.key()).executes(this::help)
                     .then(Commands.argument(BLOCKS, DoubleArgumentType.doubleArg(MIN_SHIFT, MAX_SHIFT))
                             .executes(context -> done(() -> edit(context, "edit.moved",
                                     current -> current.shifted(direction,
@@ -105,7 +115,7 @@ public final class EditSubCommand implements SubCommand {
     }
 
     private @NotNull LiteralArgumentBuilder<CommandSourceStack> defaultTop() {
-        return Commands.literal("default-top")
+        return Commands.literal("default-top").executes(this::help)
                 .then(Commands.argument(TOP, StringArgumentType.word())
                         .suggests(SubCommand.suggest(this::suggestBoardTops))
                         .executes(context -> done(() -> setDefaultTop(context))));
@@ -222,7 +232,7 @@ public final class EditSubCommand implements SubCommand {
     }
 
     private void notFound(@NotNull CommandSender sender, @NotNull String id) {
-        config.send(sender, "general.board-not-found", Map.of("id", id));
+        config.send(sender, "board-not-found", Map.of("id", id));
     }
 
     private static @NotNull CommandSender sender(@NotNull CommandContext<CommandSourceStack> context) {

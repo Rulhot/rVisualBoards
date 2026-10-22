@@ -20,7 +20,8 @@ public record PlacedBoard(
         double z,
         float yaw,
         double scale,
-        @Nullable String defaultTop
+        @Nullable String defaultTop,
+        boolean hidden
 ) {
 
     public static final int MAX_ID_LENGTH = 32;
@@ -49,7 +50,7 @@ public record PlacedBoard(
 
     public static @NotNull PlacedBoard create(@NotNull String id, @NotNull String type, @NotNull String world,
                                               double x, double y, double z, float viewerYaw, boolean snapToGrid) {
-        return new PlacedBoard(id, type, world, x, y, z, 0F, DEFAULT_SCALE, null)
+        return new PlacedBoard(id, type, world, x, y, z, 0F, DEFAULT_SCALE, null, false)
                 .placedAt(world, x, y, z, viewerYaw, snapToGrid);
     }
 
@@ -57,10 +58,10 @@ public record PlacedBoard(
                                          float viewerYaw, boolean snapToGrid) {
         float boardYaw = boardYaw(viewerYaw, snapToGrid);
         if (!snapToGrid) {
-            return new PlacedBoard(id, type, targetWorld, targetX, targetY, targetZ, boardYaw, scale, defaultTop);
+            return new PlacedBoard(id, type, targetWorld, targetX, targetY, targetZ, boardYaw, scale, defaultTop, hidden);
         }
         return new PlacedBoard(id, type, targetWorld, blockCenter(targetX), Math.floor(targetY), blockCenter(targetZ),
-                boardYaw, scale, defaultTop);
+                boardYaw, scale, defaultTop, hidden);
     }
 
     public @NotNull PlacedBoard facing(float viewerYaw, boolean snapToGrid) {
@@ -120,7 +121,7 @@ public record PlacedBoard(
     }
 
     private @NotNull PlacedBoard moved(double deltaX, double deltaY, double deltaZ) {
-        return new PlacedBoard(id, type, world, x + deltaX, y + deltaY, z + deltaZ, yaw, scale, defaultTop);
+        return new PlacedBoard(id, type, world, x + deltaX, y + deltaY, z + deltaZ, yaw, scale, defaultTop, hidden);
     }
 
     private static float normalizeYaw(float yaw) {

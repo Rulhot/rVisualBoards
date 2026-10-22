@@ -23,7 +23,7 @@ public final class BoardCommand {
         LiteralArgumentBuilder<CommandSourceStack> root = Commands.literal(label)
                 .requires(source -> source.getSender().hasPermission(ADMIN_PERMISSION))
                 .executes(context -> {
-                    config.send(context.getSource().getSender(), "general.help");
+                    config.send(context.getSource().getSender(), "help");
                     return Command.SINGLE_SUCCESS;
                 });
         for (SubCommand subCommand : subCommands) {

@@ -19,6 +19,8 @@ public sealed interface ButtonAction permits ButtonAction.Slot, ButtonAction.Per
             Integer index = parseIndex(raw.substring(PeriodTab.PREFIX.length()));
             return index == null ? null : new PeriodTab(index);
         }
+
+
         for (Cycle cycle : Cycle.values()) {
             if (cycle.serialize().equals(raw)) {
                 return cycle;
@@ -55,6 +57,7 @@ public sealed interface ButtonAction permits ButtonAction.Slot, ButtonAction.Per
             return PREFIX + index;
         }
     }
+
 
     enum Cycle implements ButtonAction {
         PREVIOUS("previous", -1),

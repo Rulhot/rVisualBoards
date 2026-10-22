@@ -22,6 +22,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
 public final class ConfigFile {
@@ -52,16 +53,16 @@ public final class ConfigFile {
     }
 
     public static @Nullable ConfigFile load(@NotNull JavaPlugin plugin, @NotNull String name,
-                                            @NotNull Set<String> preserved) {
+                                            @NotNull Set<String> preserved, @NotNull Map<String, String> renamed) {
         String defaults = bundled(plugin, name);
         if (defaults == null) {
             return null;
         }
-        return load(plugin.getDataFolder().toPath().resolve(name), name, defaults, preserved);
+        return load(plugin.getDataFolder().toPath().resolve(name), name, defaults, preserved, renamed);
     }
 
     static @Nullable ConfigFile load(@NotNull Path file, @NotNull String name, @NotNull String defaultsText,
-                                     @NotNull Set<String> preserved) {
+                                     @NotNull Set<String> preserved, @NotNull Map<String, String> renamed) {
         try {
             if (Files.notExists(file)) {
                 Files.createDirectories(file.toAbsolutePath().getParent());
@@ -72,6 +73,7 @@ public final class ConfigFile {
             defaults.loadFromString(defaultsText);
             YamlConfiguration current = new YamlConfiguration();
             current.loadFromString(Files.readString(file, StandardCharsets.UTF_8));
+            moveRenamed(current, renamed);
             if (isOutdated(current, defaults, preserved)) {
                 Files.copy(file, file.resolveSibling(file.getFileName() + BACKUP_SUFFIX),
                         StandardCopyOption.REPLACE_EXISTING);
@@ -144,6 +146,10 @@ public final class ConfigFile {
 
     public boolean isSection(@NotNull String path) {
         return yaml.isConfigurationSection(path);
+    }
+
+    public boolean isList(@NotNull String path) {
+        return yaml.isList(path);
     }
 
     public @NotNull String string(@NotNull String path, @NotNull String fallback) {
@@ -351,6 +357,26 @@ public final class ConfigFile {
             return Enum.valueOf(type, raw.trim().toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException exception) {
             return null;
+        }
+    }
+
+    private static void moveRenamed(@NotNull YamlConfiguration current, @NotNull Map<String, String> renamed) {
+        for (Map.Entry<String, String> entry : renamed.entrySet()) {
+            String from = entry.getKey();
+            String to = entry.getValue();
+            if (!current.contains(from) || current.contains(to)) {
+                continue;
+            }
+            ConfigurationSection section = current.getConfigurationSection(from);
+            if (section == null) {
+                current.set(to, current.get(from));
+                continue;
+            }
+            for (String key : section.getKeys(true)) {
+                if (!section.isConfigurationSection(key)) {
+                    current.set(join(to, key), section.get(key));
+                }
+            }
         }
     }
 

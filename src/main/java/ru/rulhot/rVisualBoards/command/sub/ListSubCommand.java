@@ -40,7 +40,7 @@ public final class ListSubCommand implements SubCommand {
         }
         config.send(sender, "list.header", Map.of("count", placed.size()));
         for (PlacedBoard board : placed) {
-            config.send(sender, "list.entry", board.placeholders());
+            config.send(sender, board.hidden() ? "list.entry-hidden" : "list.entry", board.placeholders());
         }
     }
 }

@@ -2,6 +2,7 @@ package ru.rulhot.rVisualBoards.hologram;
 
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.protocol.player.User;
+import net.kyori.adventure.sound.Sound;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -12,10 +13,14 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import ru.rulhot.rVisualBoards.hologram.HologramView.Button;
 import ru.rulhot.rVisualBoards.hologram.HologramView.Cell;
+import ru.rulhot.rVisualBoards.model.LeaderboardSnapshot;
+import ru.rulhot.rVisualBoards.model.LeaderboardSnapshot.Entry;
 import ru.rulhot.rVisualBoards.model.Settings;
 import ru.rulhot.rVisualBoards.model.PlacedBoard;
 import ru.rulhot.rVisualBoards.model.TopDefinition;
+import ru.rulhot.rVisualBoards.model.TopDefinition.FormatKey;
 import ru.rulhot.rVisualBoards.model.TopDefinition.Period;
+import ru.rulhot.rVisualBoards.util.MessageUtil;
 import ru.rulhot.rVisualBoards.util.SchedulerUtil;
 
 import java.util.HashSet;
@@ -35,8 +40,10 @@ public final class BoardHologram {
     private static final int MAX_NEW_VIEWS_PER_TICK = 3;
     private static final long CATCH_UP_DELAY_TICKS = 1L;
 
+
     private final @NotNull HologramContext context;
     private final @NotNull PlacedBoard board;
+
     private final @NotNull List<TopDefinition> tops;
     private final @NotNull Map<String, TopDefinition> topsById;
     private final @NotNull BoardFrame frame;
@@ -51,6 +58,7 @@ public final class BoardHologram {
 
     private volatile @Nullable SchedulerUtil.Task viewerTask;
     private volatile @Nullable SchedulerUtil.Task hoverTask;
+
     private volatile boolean stopped;
     private boolean spawned;
     private boolean catchingUp;
@@ -82,6 +90,7 @@ public final class BoardHologram {
         return board.world();
     }
 
+
     public void start() {
         SchedulerUtil scheduler = context.scheduler();
         Settings settings = context.settings();
@@ -91,6 +100,7 @@ public final class BoardHologram {
             hoverTask = scheduler.runAtTimer(origin, this::hoverTick, FIRST_TICK_DELAY,
                     settings.advanced().hoverCheckIntervalTicks());
         }
+
     }
 
     public void stop() {
@@ -109,16 +119,16 @@ public final class BoardHologram {
         clearState();
     }
 
-    public boolean select(@NotNull Player player, @NotNull ButtonAction action) {
+    public @Nullable Selected select(@NotNull Player player, @NotNull ButtonAction action) {
         HologramView view = views.get(player.getUniqueId());
         TopDefinition current = view == null ? null : topsById.get(view.topId());
         if (stopped || current == null) {
-            return false;
+            return null;
         }
         TopDefinition target = resolveTop(view, current, action);
         Period period = target == null ? null : resolvePeriod(view, current, target, action);
         if (target == null || period == null || (target == current && period == view.period())) {
-            return false;
+            return null;
         }
         UUID viewerId = player.getUniqueId();
         String viewerName = player.getName();
@@ -130,7 +140,26 @@ public final class BoardHologram {
             context.leaderboards().fetchStanding(viewerId, viewerName, target.board(), period)
                     .whenComplete((ignored, error) -> refreshStanding(viewerId));
         }
-        return true;
+        return new Selected(target, target != current);
+    }
+
+    public @Nullable RowClick clickRow(@NotNull Player player) {
+        HologramView view = views.get(player.getUniqueId());
+        TopDefinition top = view == null ? null : topsById.get(view.topId());
+        if (stopped || top == null || top.rowClick().isEmpty() || view.isAnimating()) {
+            return null;
+        }
+        Location eye = player.getEyeLocation();
+        BoardFrame.Point point = frame.world().equals(eye.getWorld())
+                ? view.frame().project(eye.getX(), eye.getY(), eye.getZ(), eye.getYaw(), eye.getPitch(),
+                context.settings().scroll().distance())
+                : null;
+        int slot = point == null ? BoardGeometry.NO_ROW : geometry.rowAt(point.x(), point.y());
+        LeaderboardSnapshot snapshot = context.leaderboards().snapshot(top.board(), view.period());
+        Entry entry = slot == BoardGeometry.NO_ROW || snapshot == null
+                ? null
+                : snapshot.entry(view.scrollOffset() + slot);
+        return entry == null ? null : new RowClick(top, entry);
     }
 
     public boolean scroll(@NotNull Player player, int delta) {
@@ -173,8 +202,10 @@ public final class BoardHologram {
         stopped = true;
         cancel(viewerTask);
         cancel(hoverTask);
+
         viewerTask = null;
         hoverTask = null;
+
         return true;
     }
 
@@ -190,6 +221,7 @@ public final class BoardHologram {
                 yield tops.get(Math.floorMod(index + cycle.step(), tops.size()));
             }
             case ButtonAction.PeriodTab tab -> current;
+
         };
     }
 
@@ -283,7 +315,9 @@ public final class BoardHologram {
                 context.leaderboards().watch(viewerId, player.getName(), top.board(), view.period());
             }
             if (!view.isAnimating()) {
-                renderer.refreshRows(view, top);
+                if (renderer.refreshRows(view, top)) {
+                    wave(view);
+                }
                 renderer.renderStanding(view, top, player.getName());
             }
         }
@@ -295,6 +329,39 @@ public final class BoardHologram {
         if (pending && !catchingUp) {
             catchingUp = true;
             context.scheduler().runAtLater(origin, this::catchUp, CATCH_UP_DELAY_TICKS);
+        }
+    }
+
+    private void wave(@NotNull HologramView view) {
+        Settings.Effects effects = context.settings().effects();
+        if (!effects.wave()) {
+            return;
+        }
+        int generation = view.generation();
+        double height = effects.waveHeight() * frame.scale();
+        int duration = effects.waveDurationTicks();
+        List<List<Cell>> rows = view.rows();
+        for (int index = 0; index < rows.size(); index++) {
+            List<HologramPart> parts = rows.get(index).stream().map(Cell::part).toList();
+            long delay = FIRST_TICK_DELAY + (long) index * effects.waveStaggerTicks();
+            context.scheduler().runAtLater(origin, () -> {
+                if (view.isCurrent(generation) && !view.isAnimating()) {
+                    bounce(parts, height, duration);
+                }
+            }, delay);
+            context.scheduler().runAtLater(origin, () -> {
+                parts.forEach(part -> part.bounce(0D));
+                if (!view.isDetached() && !view.isAnimating()) {
+                    bounce(parts, 0D, duration);
+                }
+            }, delay + duration);
+        }
+    }
+
+    private static void bounce(@NotNull List<HologramPart> parts, double height, int duration) {
+        for (HologramPart part : parts) {
+            part.bounce(height);
+            part.apply(duration);
         }
     }
 
@@ -348,6 +415,17 @@ public final class BoardHologram {
                 zoom(buttonParts(view, view.hoveredButton()), NORMAL_ZOOM, hover.durationTicks());
                 zoom(buttonParts(view, button), hover.scale(), hover.durationTicks());
                 view.hoveredButton(button);
+                if (button != BoardGeometry.NO_BUTTON) {
+                    hoverFeedback(view, FormatKey.HINT_BUTTON, null);
+                }
+            }
+            int hinted = point == null ? BoardGeometry.NO_ROW : geometry.rowAt(point.x(), point.y());
+            if (hinted != view.hintedRow()) {
+                view.hintedRow(hinted);
+                Entry entry = hinted == BoardGeometry.NO_ROW ? null : entryAt(view, hinted);
+                if (entry != null) {
+                    hoverFeedback(view, FormatKey.HINT_ROW, entry);
+                }
             }
             if (view.isAnimating()) {
                 view.hoveredRow(BoardGeometry.NO_ROW);
@@ -361,6 +439,30 @@ public final class BoardHologram {
                 zoom(rowParts(view, row), hover.rowScale(), hover.durationTicks());
                 view.hoveredRow(row);
             }
+        }
+    }
+
+    private @Nullable Entry entryAt(@NotNull HologramView view, int slot) {
+        TopDefinition top = topsById.get(view.topId());
+        LeaderboardSnapshot snapshot = top == null ? null : context.leaderboards().snapshot(top.board(), view.period());
+        return snapshot == null ? null : snapshot.entry(view.scrollOffset() + slot);
+    }
+
+    private void hoverFeedback(@NotNull HologramView view, @NotNull FormatKey hintKey, @Nullable Entry entry) {
+        Player player = Bukkit.getPlayer(view.viewerId());
+        TopDefinition top = topsById.get(view.topId());
+        if (player == null || top == null) {
+            return;
+        }
+        Sound sound = context.settings().sounds().hover();
+        if (sound != null && entry == null) {
+            player.playSound(sound);
+        }
+        String hint = top.format(hintKey);
+        if (!hint.isBlank()) {
+            player.sendActionBar(MessageUtil.parseText(hint, entry == null
+                    ? Map.of()
+                    : Map.of("name", entry.name(), "place", entry.place())));
         }
     }
 
@@ -430,5 +532,11 @@ public final class BoardHologram {
         if (task != null) {
             task.cancel();
         }
+    }
+
+    public record RowClick(@NotNull TopDefinition top, @NotNull Entry entry) {
+    }
+
+    public record Selected(@NotNull TopDefinition top, boolean topChanged) {
     }
 }

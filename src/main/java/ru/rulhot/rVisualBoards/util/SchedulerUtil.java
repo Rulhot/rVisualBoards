@@ -36,6 +36,7 @@ public final class SchedulerUtil {
         Bukkit.getGlobalRegionScheduler().execute(plugin, () -> guarded(task));
     }
 
+
     public void runAt(@NotNull Location location, @NotNull Runnable task) {
         Bukkit.getRegionScheduler().execute(plugin, location, () -> guarded(task));
     }

@@ -1,66 +1,75 @@
-prefix: "<b><gradient:#82ABF0:#B3CCF5><shadow:#2B3A52:1>rVisualBoards</shadow></gradient></b> <dark_gray>»</dark_gray> <white>"
+prefix: "<b><gradient:#82ABF0:#B3CCF5><shadow:#2B3A52:1>rVisualBoards</shadow></gradient></b> <dark_gray>»</dark_gray>"
 
-general:
-  help: |-
-    {prefix}Команды:
-    <white> /{command} create [id] [вид] <dark_gray>»</dark_gray> <white>поставить табло там, где ты стоишь
-    <white> /{command} movehere [id] <dark_gray>»</dark_gray> <white>перенести табло к себе
-    <white> /{command} edit [id] <dark_gray>»</dark_gray> <white>поворот, размер, вид и первый топ табло
-    <white> /{command} remove [id] <dark_gray>»</dark_gray> <white>удалить табло
-    <white> /{command} list <dark_gray>»</dark_gray> <white>список табло
-    <white> /{command} reload <dark_gray>»</dark_gray> <white>перезагрузить конфиги и папку tops
-    <white> /{command} help <dark_gray>»</dark_gray> <white>показать эту справку
-  player-only: "{prefix}Эта команда работает только у игрока."
-  not-ready: "{prefix}Плагин ещё загружается или в конфиге ошибка. Проверь консоль и сделай <#82ABF0>/{command} reload</#82ABF0>."
-  board-not-found: "{prefix}Табло <#82ABF0>{id}</#82ABF0> не найдено. Список табло: <#82ABF0>/{command} list"
-  type-missing: "{prefix}Нет файла <#82ABF0>tops/{type}.yml</#82ABF0>. Есть: <#82ABF0>{types}"
+player-only: "{prefix} <white>Эта команда работает только у игрока."
+not-ready: "{prefix} <white>Плагин ещё загружается или в конфиге ошибка. Проверь консоль и сделай <#82ABF0>/{command} reload</#82ABF0>."
+board-not-found: "{prefix} <white>Табло <#82ABF0>{id}</#82ABF0> не найдено. Список табло: <#82ABF0>/{command} list"
+type-missing: "{prefix} <white>Нет файла <#82ABF0>tops/{type}.yml</#82ABF0>. Есть: <#82ABF0>{types}"
+
+help:
+  - "{prefix} <white>Команды:"
+  - " <#82ABF0>/{command} create [id] [вид] <dark_gray>»</dark_gray> <white>поставить табло там, где ты стоишь"
+  - " <#82ABF0>/{command} movehere [id] <dark_gray>»</dark_gray> <white>перенести табло к себе"
+  - " <#82ABF0>/{command} edit [id] <dark_gray>»</dark_gray> <white>поворот, размер, вид, первый топ и видимость табло"
+  - " <#82ABF0>/{command} remove [id] <dark_gray>»</dark_gray> <white>удалить табло"
+  - " <#82ABF0>/{command} list <dark_gray>»</dark_gray> <white>список табло"
+  - " <#82ABF0>/{command} reload <dark_gray>»</dark_gray> <white>перезагрузить конфиги и папку tops"
+  - " <#82ABF0>/{command} help <dark_gray>»</dark_gray> <white>эта справка"
 
 create:
-  success: "{prefix}Табло <#82ABF0>{id}</#82ABF0> (<#82ABF0>{type}</#82ABF0>) стоит на <#82ABF0>{world} {x} {y} {z}</#82ABF0>. Отойди на пару блоков назад, чтобы увидеть его."
-  no-type: "{prefix}Укажи вид табло: <#82ABF0>/{command} create {id} [вид]</#82ABF0>. Есть: <#82ABF0>{types}"
-  invalid-id: "{prefix}ID состоит из a-z, 0-9, _ и - (до 32 символов). Например: <#82ABF0>/{command} create spawn loonycube"
-  exists: "{prefix}Табло <#82ABF0>{id}</#82ABF0> уже есть. Выбери другой ID или перенеси его: <#82ABF0>/{command} movehere {id}"
+  usage: "{prefix} <white>Использование: <#82ABF0>/{command} create [id] [вид]"
+  no-type: "{prefix} <white>Укажи вид табло: <#82ABF0>/{command} create {id} [вид]</#82ABF0>. Есть: <#82ABF0>{types}"
+  invalid-id: "{prefix} <white>ID состоит из a-z, 0-9, _ и - (до 32 символов). Например: <#82ABF0>/{command} create spawn loonycube"
+  exists: "{prefix} <white>Табло <#82ABF0>{id}</#82ABF0> уже есть. Выбери другой ID или перенеси его: <#82ABF0>/{command} movehere {id}"
+  success: "{prefix} <white>Табло <#82ABF0>{id}</#82ABF0> (<#82ABF0>{type}</#82ABF0>) стоит на <#82ABF0>{world} {x} {y} {z}</#82ABF0>. Отойди на пару блоков назад, чтобы увидеть его."
 
 movehere:
-  success: "{prefix}Табло <#82ABF0>{id}</#82ABF0> перенесено на <#82ABF0>{world} {x} {y} {z}</#82ABF0>."
+  usage: "{prefix} <white>Использование: <#82ABF0>/{command} movehere [id]"
+  success: "{prefix} <white>Табло <#82ABF0>{id}</#82ABF0> перенесено на <#82ABF0>{world} {x} {y} {z}</#82ABF0>."
 
 remove:
-  success: "{prefix}Табло <#82ABF0>{id}</#82ABF0> удалено."
+  usage: "{prefix} <white>Использование: <#82ABF0>/{command} remove [id]"
+  success: "{prefix} <white>Табло <#82ABF0>{id}</#82ABF0> удалено."
 
 list:
-  empty: "{prefix}Табло пока нет."
-  header: "{prefix}Табло: <#82ABF0>{count}"
+  empty: "{prefix} <white>Табло пока нет."
+  header: "{prefix} <white>Табло: <#82ABF0>{count}"
   entry: " <dark_gray>•</dark_gray> <#82ABF0>{id}</#82ABF0> <dark_gray>»</dark_gray> <white>{type}, {world} {x} {y} {z}"
+  entry-hidden: " <dark_gray>•</dark_gray> <gray>{id}</gray> <dark_gray>»</dark_gray> <gray>{type}, {world} {x} {y} {z}, спрятано"
 
 reload:
-  success: "{prefix}Конфиги перезагружены."
-  busy: "{prefix}Перезагрузка уже идёт. Подожди пару секунд и повтори."
-  failed: "{prefix}Конфиги не перезагружены, работают прежние. Файл и строка с ошибкой есть в консоли."
+  done: "{prefix} <white>Конфиги перезагружены."
+  busy: "{prefix} <white>Перезагрузка уже идёт. Подожди пару секунд и повтори."
+  failed: "{prefix} <white>Конфиги не перезагружены, работают прежние. Файл и строка с ошибкой есть в консоли."
 
 edit:
-  info: |-
-    {prefix}Табло <#82ABF0>{id}</#82ABF0>:
-    <white> Вид: <#82ABF0>{type}</#82ABF0>, топы: <#82ABF0>{tops}</#82ABF0>
-    <white> Открывается на: <#82ABF0>{default-top}</#82ABF0>
-    <white> Место: <#82ABF0>{world} {x} {y} {z}</#82ABF0>, поворот <#82ABF0>{yaw}°</#82ABF0>, размер <#82ABF0>{scale}</#82ABF0>
-  help: |-
-    <white>Что поменять: <#82ABF0>/{command} edit {id}</#82ABF0> и дальше:
-    <white> rotate [0-360] <dark_gray>»</dark_gray> <white>повернуть на угол
-    <white> face <dark_gray>»</dark_gray> <white>развернуть к себе
-    <white> scale [0.25-4] <dark_gray>»</dark_gray> <white>размер табло
-    <white> move up|down|left|right|front|back [блоки] <dark_gray>»</dark_gray> <white>сдвинуть, front это к зрителям
-    <white> tp <dark_gray>»</dark_gray> <white>телепорт к табло
-    <white> type [вид] <dark_gray>»</dark_gray> <white>другой файл из папки tops
-    <white> default-top [топ] <dark_gray>»</dark_gray> <white>какой топ открывается первым
-  rotated: "{prefix}Табло <#82ABF0>{id}</#82ABF0> повёрнуто на <#82ABF0>{yaw}°"
-  scaled: "{prefix}Размер табло <#82ABF0>{id}</#82ABF0>: <#82ABF0>{scale}"
-  moved: "{prefix}Табло <#82ABF0>{id}</#82ABF0> теперь на <#82ABF0>{world} {x} {y} {z}"
-  teleported: "{prefix}Ты у табло <#82ABF0>{id}"
-  teleport-failed: "{prefix}Телепорт к табло <#82ABF0>{id}</#82ABF0> не удался. Повтори команду."
-  world-not-loaded: "{prefix}Мир <#82ABF0>{world}</#82ABF0> не загружен."
-  type: "{prefix}Табло <#82ABF0>{id}</#82ABF0> теперь вида <#82ABF0>{type}</#82ABF0>."
-  default-top: "{prefix}Табло <#82ABF0>{id}</#82ABF0> открывается на топе <#82ABF0>{top}</#82ABF0>."
-  top-missing: "{prefix}Топа <#82ABF0>{top}</#82ABF0> нет на табло <#82ABF0>{id}</#82ABF0>. Список топов: <#82ABF0>/{command} edit {id}"
+  usage: "{prefix} <white>Использование: <#82ABF0>/{command} edit [id]"
+  info:
+    - "{prefix} <white>Табло <#82ABF0>{id}</#82ABF0>:"
+    - " <white>Вид: <#82ABF0>{type}</#82ABF0>, топы: <#82ABF0>{tops}</#82ABF0>"
+    - " <white>Открывается на: <#82ABF0>{default-top}</#82ABF0>"
+    - " <white>Место: <#82ABF0>{world} {x} {y} {z}</#82ABF0>, поворот <#82ABF0>{yaw}°</#82ABF0>, размер <#82ABF0>{scale}</#82ABF0>"
+  help:
+    - " <white>Что поменять: <#82ABF0>/{command} edit {id}</#82ABF0> и дальше:"
+    - " <#82ABF0>rotate [0-360] <dark_gray>»</dark_gray> <white>повернуть на угол"
+    - " <#82ABF0>face <dark_gray>»</dark_gray> <white>развернуть к себе"
+    - " <#82ABF0>scale [0.25-4] <dark_gray>»</dark_gray> <white>размер табло"
+    - " <#82ABF0>move up|down|left|right|front|back [блоки] <dark_gray>»</dark_gray> <white>сдвинуть, front это к зрителям"
+    - " <#82ABF0>tp <dark_gray>»</dark_gray> <white>телепорт к табло"
+    - " <#82ABF0>type [вид] <dark_gray>»</dark_gray> <white>другой файл из папки tops"
+    - " <#82ABF0>default-top [топ] <dark_gray>»</dark_gray> <white>какой топ открывается первым"
+    - " <#82ABF0>hide <dark_gray>»</dark_gray> <white>спрятать табло, не удаляя его"
+    - " <#82ABF0>show <dark_gray>»</dark_gray> <white>вернуть спрятанное табло"
+  rotated: "{prefix} <white>Табло <#82ABF0>{id}</#82ABF0> повёрнуто на <#82ABF0>{yaw}°"
+  scaled: "{prefix} <white>Размер табло <#82ABF0>{id}</#82ABF0>: <#82ABF0>{scale}"
+  moved: "{prefix} <white>Табло <#82ABF0>{id}</#82ABF0> теперь на <#82ABF0>{world} {x} {y} {z}"
+  teleported: "{prefix} <white>Ты у табло <#82ABF0>{id}"
+  teleport-failed: "{prefix} <white>Телепорт к табло <#82ABF0>{id}</#82ABF0> не удался. Повтори команду."
+  world-not-loaded: "{prefix} <white>Мир <#82ABF0>{world}</#82ABF0> не загружен."
+  type: "{prefix} <white>Табло <#82ABF0>{id}</#82ABF0> теперь вида <#82ABF0>{type}</#82ABF0>."
+  default-top: "{prefix} <white>Табло <#82ABF0>{id}</#82ABF0> открывается на топе <#82ABF0>{top}</#82ABF0>."
+  hidden: "{prefix} <white>Табло <#82ABF0>{id}</#82ABF0> спрятано. Вернуть: <#82ABF0>/{command} edit {id} show"
+  shown: "{prefix} <white>Табло <#82ABF0>{id}</#82ABF0> снова видно."
+  top-missing: "{prefix} <white>Топа <#82ABF0>{top}</#82ABF0> нет на табло <#82ABF0>{id}</#82ABF0>. Список топов: <#82ABF0>/{command} edit {id}"
   no-file: "<gray>нет файла tops/{type}.yml"
 
-config-version: 2 #не трогать!!!
+config-version: 3 #не трогать!!!
