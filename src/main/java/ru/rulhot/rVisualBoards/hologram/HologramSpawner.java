@@ -28,7 +28,7 @@ final class HologramSpawner {
     private static final int MAX_LIGHT = 15;
     private static final @NotNull String SPACE = " ";
     private static final @NotNull String LINE_BREAK = "\n";
-    private static final @NotNull Color TRANSPARENT = Color.fromARGB(0, 0, 0, 0);
+    private static final @NotNull Color TRANSPARENT = BoardLayout.TRANSPARENT;
 
 
     private final @NotNull HologramContext context;
@@ -40,6 +40,8 @@ final class HologramSpawner {
     private final @NotNull BoardLayout.Tabs tabs;
     private final @NotNull BoardLayout.Colors colors;
     private final @NotNull BoardLayout.Spacing spacing;
+    private final @NotNull BoardLayout.Scrollbar scrollbar;
+    private final @NotNull BoardLayout.Footer footer;
 
     HologramSpawner(@NotNull HologramContext context, @NotNull String boardId, @NotNull BoardGeometry geometry) {
         this.context = context;
@@ -51,6 +53,8 @@ final class HologramSpawner {
         this.tabs = context.layout().tabs();
         this.colors = context.layout().colors();
         this.spacing = context.layout().spacing();
+        this.scrollbar = context.layout().scrollbar();
+        this.footer = context.layout().footer();
     }
 
     @NotNull HologramView spawnView(@NotNull User viewer, @NotNull BoardFrame frame, @NotNull UUID viewerId, @NotNull String topId,
@@ -71,6 +75,13 @@ final class HologramSpawner {
                     TextDisplay.TextAlignment.CENTER);
             titleParts.add(subtitle);
         }
+        HologramPart footerText = null;
+        if (footer.height() > 0D) {
+            addPanel(viewer, frame, titleParts, 0D, spacing.padding(), 0D, table.width(), footer.height(), footer.color());
+            footerText = text(viewer, frame, 0D, BoardGeometry.textBottom(spacing.padding(), footer.height(),
+                    table.textScale()), textDepth, table.textScale(), TextDisplay.TextAlignment.CENTER);
+            titleParts.add(footerText);
+        }
         groups.add(new Group(GroupKind.TITLE, 0, List.copyOf(titleParts)));
 
         double headerTextBottom = BoardGeometry.textBottom(geometry.headerBottom(), spacing.headerHeight(),
@@ -87,6 +98,16 @@ final class HologramSpawner {
                     TextDisplay.TextAlignment.CENTER);
             headers.add(header);
             headerParts.add(header);
+        }
+        HologramPart thumb = null;
+        if (scrollbar.enabled() && context.settings().scroll().enabled()) {
+            double x = geometry.width() / 2D + scrollbar.margin() + scrollbar.width() / 2D;
+            double track = geometry.line() * geometry.rows();
+            addPanel(viewer, frame, columnParts, x, geometry.rowsBottom(), 0D, scrollbar.width(), track,
+                    scrollbar.track());
+            thumb = panel(viewer, frame, x, geometry.rowsBottom(), spacing.depthStep(), scrollbar.width(), track,
+                    TRANSPARENT);
+            columnParts.add(thumb);
         }
         groups.add(new Group(GroupKind.HEADERS, 0, List.copyOf(headerParts)));
         groups.add(new Group(GroupKind.COLUMNS, 0, List.copyOf(columnParts)));
@@ -110,7 +131,8 @@ final class HologramSpawner {
             groups.add(new Group(GroupKind.STANDING, 0, List.copyOf(standingParts)));
         }
 
-        return new HologramView(viewer, frame, viewerId, topId, period, title, subtitle, headers, rows, standing,
+        return new HologramView(viewer, frame, viewerId, topId, period, title, subtitle, headers, rows, footerText,
+                thumb, standing,
                 spawnButtons(viewer, frame), groups, spawnHitboxes(viewer, frame, viewerId), context.hitboxes());
     }
 

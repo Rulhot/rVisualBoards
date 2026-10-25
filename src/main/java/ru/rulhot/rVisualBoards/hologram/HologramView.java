@@ -28,6 +28,8 @@ final class HologramView {
     private final @Nullable HologramPart subtitle;
     private final @NotNull List<HologramPart> headers;
     private final @NotNull List<List<Cell>> rows;
+    private final @Nullable HologramPart footer;
+    private final @Nullable HologramPart thumb;
     private final @NotNull List<Cell> standing;
     private final @NotNull List<Button> buttons;
     private final @NotNull List<Group> groups;
@@ -54,7 +56,8 @@ final class HologramView {
 
     HologramView(@NotNull User viewer, @NotNull BoardFrame frame, @NotNull UUID viewerId, @NotNull String topId,
                  @NotNull Period period, @NotNull HologramPart title, @Nullable HologramPart subtitle,
-                 @NotNull List<HologramPart> headers, @NotNull List<List<Cell>> rows, @NotNull List<Cell> standing,
+                 @NotNull List<HologramPart> headers, @NotNull List<List<Cell>> rows,
+                 @Nullable HologramPart footer, @Nullable HologramPart thumb, @NotNull List<Cell> standing,
                  @NotNull List<Button> buttons, @NotNull List<Group> groups, @NotNull List<PacketHitbox> hitboxes,
                  @NotNull HitboxRegistry registry) {
         this.viewer = viewer;
@@ -68,6 +71,8 @@ final class HologramView {
         this.subtitle = subtitle;
         this.headers = List.copyOf(headers);
         this.rows = List.copyOf(rows);
+        this.footer = footer;
+        this.thumb = thumb;
         this.standing = List.copyOf(standing);
         this.buttons = List.copyOf(buttons);
         this.groups = List.copyOf(groups);
@@ -112,6 +117,14 @@ final class HologramView {
 
     @NotNull List<List<Cell>> rows() {
         return rows;
+    }
+
+    @Nullable HologramPart footer() {
+        return footer;
+    }
+
+    @Nullable HologramPart thumb() {
+        return thumb;
     }
 
     @NotNull List<Cell> standing() {

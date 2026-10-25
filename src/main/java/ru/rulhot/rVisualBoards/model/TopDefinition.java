@@ -99,6 +99,7 @@ public record TopDefinition(
         TAB("tab"),
         TAB_SELECTED("tab-selected"),
         SUBTITLE("subtitle"),
+        FOOTER("footer"),
         HINT_ROW("hint-row"),
         HINT_BUTTON("hint-button");
 

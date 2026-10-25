@@ -24,7 +24,7 @@ final class HologramPart {
     private double zoom = 1D;
     private boolean faded;
     private double bounce;
-
+    private double stretchY = 1D;
 
     HologramPart(@NotNull PacketDisplay display, float scaleX, float scaleY, float scaleZ, double height,
                  @Nullable Color background) {
@@ -85,16 +85,19 @@ final class HologramPart {
         this.bounce = bounce;
     }
 
+    void stretchY(double stretchY) {
+        this.stretchY = stretchY;
+    }
 
     void apply(int durationTicks) {
         float factor = (float) zoom;
-        float lift = (float) (-(zoom - 1D) * height / 2D + bounce);
+        float lift = (float) (-(zoom - 1D) * height * stretchY / 2D + bounce);
         Color current = background;
         display.send(List.of(
                 PacketDisplay.interpolationDelay(0),
                 PacketDisplay.interpolationDuration(durationTicks),
                 PacketDisplay.translation((float) offsetX, lift, 0F),
-                PacketDisplay.scale(scaleX * factor, scaleY * factor, scaleZ),
+                PacketDisplay.scale(scaleX * factor, (float) (scaleY * factor * stretchY), scaleZ),
                 current == null
                         ? PacketDisplay.opacity(faded ? FADED_OPACITY : FULL_OPACITY)
                         : PacketDisplay.background(faded

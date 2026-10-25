@@ -22,6 +22,7 @@ formats:
   personal-place-unranked: "<#01abce>-"
   personal-name: "<#d0d0d0>{name}"
   personal-value: "<#81accc>{value} ч."
+  footer: "<#9a9a9a>Смотри на строки и крути колёсико"
 
 table:
   width: 6.3
@@ -63,3 +64,14 @@ spacing:
   cell-padding: 0.08
   buttons-margin: 0.2
   depth-step: 0.01
+
+scrollbar:
+  enabled: true
+  width: 0.04
+  margin: 0.06
+  track: "#40000000"
+  thumb: "#FFFFD23D"
+
+footer:
+  height: 0.3
+  color: "#00000000"

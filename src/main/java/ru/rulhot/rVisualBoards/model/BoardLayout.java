@@ -12,13 +12,18 @@ public record BoardLayout(
         @NotNull Tabs tabs,
         @NotNull Columns columns,
         @NotNull Colors colors,
-        @NotNull Spacing spacing
+        @NotNull Spacing spacing,
+        @NotNull Scrollbar scrollbar,
+        @NotNull Footer footer
 ) {
+
+    public static final @NotNull Color TRANSPARENT = Color.fromARGB(0, 0, 0, 0);
 
     public static final double MIN_SCALE = 0.1D;
     public static final double MAX_SCALE = 5D;
     public static final double MIN_HEIGHT = 0.05D;
     public static final double MAX_HEIGHT = 2D;
+    public static final double MIN_THICKNESS = 0.005D;
     public static final double MIN_SPACING = 0D;
     public static final double MAX_SPACING = 2D;
 
@@ -205,5 +210,25 @@ public record BoardLayout(
 
 
         public static final double MAX_DEPTH_STEP = 0.1D;
+    }
+
+    public record Scrollbar(boolean enabled, double width, double margin, @NotNull Color track, @NotNull Color thumb) {
+
+        public static final @NotNull String ENABLED = "scrollbar.enabled";
+        public static final @NotNull String WIDTH = "scrollbar.width";
+        public static final @NotNull String MARGIN = "scrollbar.margin";
+        public static final @NotNull String TRACK = "scrollbar.track";
+        public static final @NotNull String THUMB = "scrollbar.thumb";
+
+        public static final @NotNull Scrollbar NONE = new Scrollbar(false, 0.04D, 0.06D,
+                Color.fromARGB(0x40000000), Color.fromARGB(0xFFFFD23D));
+    }
+
+    public record Footer(double height, @NotNull Color color) {
+
+        public static final @NotNull String HEIGHT = "footer.height";
+        public static final @NotNull String COLOR = "footer.color";
+
+        public static final @NotNull Footer NONE = new Footer(0D, TRANSPARENT);
     }
 }

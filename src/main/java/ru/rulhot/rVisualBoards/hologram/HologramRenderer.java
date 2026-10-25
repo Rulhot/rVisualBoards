@@ -41,8 +41,10 @@ final class HologramRenderer {
     private static final @NotNull String LABEL = "label";
     private static final @NotNull String PERIOD = "period";
 
-    private static final @NotNull Color TRANSPARENT = Color.fromARGB(0, 0, 0, 0);
+    private static final @NotNull Color TRANSPARENT = BoardLayout.TRANSPARENT;
     private static final long NO_VERSION = 0L;
+    private static final int THUMB_TICKS = 3;
+    private static final @NotNull List<String> LINE_BREAKS = List.of("\n", "<newline>", "<br>");
 
 
     private final @NotNull HologramContext context;
@@ -82,6 +84,7 @@ final class HologramRenderer {
                 LeaderboardSnapshot snapshot = snapshot(view, top);
                 renderRow(view, top, snapshot, group.slot());
                 if (group.slot() == view.rows().size()) {
+                    renderThumb(view, snapshot);
                     view.markRendered(key(view, top), versionOf(snapshot));
                 }
             }
@@ -242,6 +245,21 @@ final class HologramRenderer {
         if (subtitle != null) {
             subtitle.text(MessageUtil.parseText(top.format(FormatKey.SUBTITLE), placeholders));
         }
+        HologramPart footer = view.footer();
+        if (footer != null) {
+            String raw = top.format(FormatKey.FOOTER);
+            footer.text(MessageUtil.parseText(raw, placeholders));
+            footer.moveTo(view.frame().point(0D, footerBottom(raw), textDepth()));
+        }
+    }
+
+    private double footerBottom(@NotNull String raw) {
+        int lines = 1;
+        for (String lineBreak : LINE_BREAKS) {
+            lines += (raw.length() - raw.replace(lineBreak, "").length()) / lineBreak.length();
+        }
+        double height = context.layout().footer().height();
+        return spacing.padding() + (height - BoardGeometry.LINE * table.textScale() * lines) / 2D;
     }
 
     private void renderHeaders(@NotNull HologramView view, @NotNull TopDefinition top) {
@@ -257,7 +275,28 @@ final class HologramRenderer {
         for (int slot = 1; slot <= view.rows().size(); slot++) {
             renderRow(view, top, snapshot, slot);
         }
+        renderThumb(view, snapshot);
         view.markRendered(key(view, top), versionOf(snapshot));
+    }
+
+    private void renderThumb(@NotNull HologramView view, @Nullable LeaderboardSnapshot snapshot) {
+        HologramPart thumb = view.thumb();
+        if (thumb == null) {
+            return;
+        }
+        int filled = snapshot == null ? 0 : snapshot.filledPlaces();
+        int maxOffset = Math.max(0, filled - geometry.rows());
+        if (maxOffset == 0) {
+            thumb.recolor(TRANSPARENT);
+            return;
+        }
+        double share = (double) geometry.rows() / filled;
+        double free = geometry.line() * geometry.rows() * (1D - share);
+        double progress = (double) Math.min(view.scrollOffset(), maxOffset) / maxOffset;
+        thumb.stretchY(share);
+        thumb.bounce(free * (1D - progress) * view.frame().scale());
+        thumb.recolor(context.layout().scrollbar().thumb());
+        thumb.apply(THUMB_TICKS);
     }
 
     private void renderRow(@NotNull HologramView view, @NotNull TopDefinition top,

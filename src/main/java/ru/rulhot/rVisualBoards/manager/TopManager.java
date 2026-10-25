@@ -137,7 +137,16 @@ public final class TopManager {
                 parseTabs(file),
                 parseColumns(file),
                 parseColors(file),
-                parseSpacing(file));
+                parseSpacing(file),
+                new BoardLayout.Scrollbar(
+                        file.bool(BoardLayout.Scrollbar.ENABLED, BoardLayout.Scrollbar.NONE.enabled()),
+                        thickness(file, BoardLayout.Scrollbar.WIDTH, BoardLayout.Scrollbar.NONE.width()),
+                        spacing(file, BoardLayout.Scrollbar.MARGIN, BoardLayout.Scrollbar.NONE.margin()),
+                        file.color(BoardLayout.Scrollbar.TRACK, BoardLayout.Scrollbar.NONE.track()),
+                        file.color(BoardLayout.Scrollbar.THUMB, BoardLayout.Scrollbar.NONE.thumb())),
+                new BoardLayout.Footer(
+                        spacing(file, BoardLayout.Footer.HEIGHT, BoardLayout.Footer.NONE.height()),
+                        file.color(BoardLayout.Footer.COLOR, BoardLayout.Footer.NONE.color())));
     }
 
     private static @Nullable TopDefinition parseTop(@NotNull ConfigFile file, @NotNull String key,
@@ -291,6 +300,10 @@ public final class TopManager {
 
     private static double height(@NotNull ConfigFile file, @NotNull String path, double fallback) {
         return file.decimal(path, fallback, BoardLayout.MIN_HEIGHT, BoardLayout.MAX_HEIGHT);
+    }
+
+    private static double thickness(@NotNull ConfigFile file, @NotNull String path, double fallback) {
+        return file.decimal(path, fallback, BoardLayout.MIN_THICKNESS, BoardLayout.MAX_HEIGHT);
     }
 
     private static double spacing(@NotNull ConfigFile file, @NotNull String path, double fallback) {

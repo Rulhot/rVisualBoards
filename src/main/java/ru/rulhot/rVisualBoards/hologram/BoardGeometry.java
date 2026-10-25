@@ -52,7 +52,8 @@ record BoardGeometry(
         double arrowsWidth = arrowCount * (buttons.arrowWidth() + spacing.buttonsGap());
         double buttonWidth = count == 0 ? 0D : onSide ? buttons.sideWidth() : Math.max(MIN_BUTTON_WIDTH,
                 (table.width() - arrowsWidth - spacing.buttonsGap() * (count - 1)) / count);
-        double buttonsBottom = spacing.padding();
+        double footer = layout.footer().height();
+        double buttonsBottom = spacing.padding() + (footer > 0D ? footer + spacing.gap() : 0D);
         double standingBottom = count == 0 || onSide
                 ? buttonsBottom
                 : buttonsBottom + buttons.height() + spacing.buttonsMargin();
