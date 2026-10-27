@@ -12,7 +12,6 @@ import ru.rulhot.rVisualBoards.hologram.HologramView.Group;
 import ru.rulhot.rVisualBoards.hologram.HologramView.GroupKind;
 import ru.rulhot.rVisualBoards.model.BoardLayout;
 import ru.rulhot.rVisualBoards.model.BoardLayout.Column;
-
 import ru.rulhot.rVisualBoards.model.TopDefinition.Period;
 
 import java.util.ArrayList;
@@ -29,7 +28,6 @@ final class HologramSpawner {
     private static final @NotNull String SPACE = " ";
     private static final @NotNull String LINE_BREAK = "\n";
     private static final @NotNull Color TRANSPARENT = BoardLayout.TRANSPARENT;
-
 
     private final @NotNull HologramContext context;
     private final @NotNull String boardId;
@@ -178,8 +176,6 @@ final class HologramSpawner {
                                    @NotNull BoardGeometry.Box box) {
         Color fill = switch (action) {
             case ButtonAction.Slot slot -> colors.button();
-
-
             case ButtonAction.Cycle cycle -> colors.arrow();
             case ButtonAction.PeriodTab tab -> colors.tab();
         };

@@ -32,6 +32,11 @@ import java.util.concurrent.ConcurrentHashMap;
 @RequiredArgsConstructor
 public final class HologramManager {
 
+    private static final @NotNull String NAME_TOKEN = "{name}";
+    private static final @NotNull String PLACE_TOKEN = "{place}";
+    private static final @NotNull String PLAYER_TOKEN = "{player}";
+    private static final @NotNull String TOP_TOKEN = "{top}";
+
     private final @NotNull Plugin plugin;
     private final @NotNull SchedulerUtil scheduler;
     private final @NotNull HologramKeys keys;
@@ -47,8 +52,7 @@ public final class HologramManager {
 
     private volatile @Nullable Settings settings;
 
-
-    public void start() {
+    public synchronized void start() {
         Settings current = config.settings();
         if (current == null) {
             Logger.error("Табло не запущены: конфигурация ещё не загружена");
@@ -58,11 +62,10 @@ public final class HologramManager {
         for (PlacedBoard board : boards.all()) {
             spawn(current, board);
         }
-
         Logger.debug("Табло запущены: boards=" + holograms.size());
     }
 
-    public void stop() {
+    public synchronized void stop() {
         settings = null;
         for (BoardHologram hologram : holograms.values()) {
             hologram.stop();
@@ -71,7 +74,7 @@ public final class HologramManager {
         lastClicks.clear();
     }
 
-    public void shutdown() {
+    public synchronized void shutdown() {
         settings = null;
         for (BoardHologram hologram : holograms.values()) {
             hologram.shutdown();
@@ -90,21 +93,22 @@ public final class HologramManager {
         return holograms.size();
     }
 
-    public void respawn(@NotNull PlacedBoard board) {
+    public synchronized void respawn(@NotNull PlacedBoard board) {
         Settings current = settings;
-        if (current != null) {
-            spawn(current, board);
+        PlacedBoard latest = boards.find(board.id());
+        if (current != null && latest != null) {
+            spawn(current, latest);
         }
     }
 
-    public void despawn(@NotNull String boardId) {
+    public synchronized void despawn(@NotNull String boardId) {
         BoardHologram previous = holograms.remove(boardId);
         if (previous != null) {
             previous.stop();
         }
     }
 
-    public void loadWorld(@NotNull World world) {
+    public synchronized void loadWorld(@NotNull World world) {
         Settings current = settings;
         if (current == null) {
             return;
@@ -116,7 +120,7 @@ public final class HologramManager {
         }
     }
 
-    public void unloadWorld(@NotNull World world) {
+    public synchronized void unloadWorld(@NotNull World world) {
         for (BoardHologram hologram : List.copyOf(holograms.values())) {
             if (hologram.worldName().equals(world.getName()) && holograms.remove(hologram.id(), hologram)) {
                 hologram.stop();
@@ -130,13 +134,10 @@ public final class HologramManager {
         if (current == null || hologram == null) {
             return;
         }
-        UUID viewerId = player.getUniqueId();
-        long now = System.currentTimeMillis();
-        Long last = lastClicks.get(viewerId);
-        if (last != null && now - last < current.clicks().cooldownMillis()) {
+        if (isCoolingDown(player.getUniqueId(), current)) {
             return;
         }
-        lastClicks.put(viewerId, now);
+        lastClicks.put(player.getUniqueId(), System.currentTimeMillis());
         BoardHologram.Selected selected = hologram.select(player, action);
         if (selected == null) {
             return;
@@ -154,7 +155,7 @@ public final class HologramManager {
 
     public void clickRow(@NotNull Player player) {
         Settings current = settings;
-        if (current == null) {
+        if (current == null || isCoolingDown(player.getUniqueId(), current)) {
             return;
         }
         BoardHologram.RowClick click = null;
@@ -167,24 +168,18 @@ public final class HologramManager {
         if (click == null) {
             return;
         }
-        UUID viewerId = player.getUniqueId();
-        long now = System.currentTimeMillis();
-        Long last = lastClicks.get(viewerId);
-        if (last != null && now - last < current.clicks().cooldownMillis()) {
-            return;
-        }
-        lastClicks.put(viewerId, now);
+        lastClicks.put(player.getUniqueId(), System.currentTimeMillis());
         String name = click.entry().name();
-        if (!PlayerCommands.isSafeName(name)) {
-            Logger.debug("Клик по строке пропущен, странный ник в топе: " + name);
+        if (!PlayerCommands.isSafeName(name) || !PlayerCommands.isSafeName(player.getName())) {
+            Logger.debug("Клик по строке пропущен, странный ник: name=" + name + ", player=" + player.getName());
             return;
         }
         for (String line : click.top().rowClick()) {
             PlayerCommands.run(scheduler, player, line
-                    .replace("{name}", name)
-                    .replace("{place}", String.valueOf(click.entry().place()))
-                    .replace("{player}", player.getName())
-                    .replace("{top}", click.top().id()));
+                    .replace(NAME_TOKEN, name)
+                    .replace(PLACE_TOKEN, String.valueOf(click.entry().place()))
+                    .replace(PLAYER_TOKEN, player.getName())
+                    .replace(TOP_TOKEN, click.top().id()));
         }
         Sound sound = current.clicks().sound();
         if (sound != null) {
@@ -221,7 +216,20 @@ public final class HologramManager {
         }
     }
 
+    private boolean isCoolingDown(@NotNull UUID viewerId, @NotNull Settings current) {
+        Long last = lastClicks.get(viewerId);
+        return last != null && System.currentTimeMillis() - last < current.clicks().cooldownMillis();
+    }
+
     private void spawn(@NotNull Settings current, @NotNull PlacedBoard board) {
+        try {
+            spawnUnchecked(current, board);
+        } catch (RuntimeException exception) {
+            Logger.error("Табло '" + board.id() + "' не запущено из-за ошибки, остальные работают", exception);
+        }
+    }
+
+    private void spawnUnchecked(@NotNull Settings current, @NotNull PlacedBoard board) {
         if (board.hidden()) {
             despawn(board.id());
             return;

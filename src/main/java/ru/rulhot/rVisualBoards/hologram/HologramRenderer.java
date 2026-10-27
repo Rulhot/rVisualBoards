@@ -16,7 +16,6 @@ import ru.rulhot.rVisualBoards.model.LeaderboardSnapshot.Standing;
 import ru.rulhot.rVisualBoards.model.TopDefinition;
 import ru.rulhot.rVisualBoards.model.TopDefinition.FormatKey;
 import ru.rulhot.rVisualBoards.model.TopDefinition.Period;
-
 import ru.rulhot.rVisualBoards.util.MessageUtil;
 
 import java.util.ArrayList;
@@ -45,7 +44,6 @@ final class HologramRenderer {
     private static final long NO_VERSION = 0L;
     private static final int THUMB_TICKS = 3;
     private static final @NotNull List<String> LINE_BREAKS = List.of("\n", "<newline>", "<br>");
-
 
     private final @NotNull HologramContext context;
     private final @NotNull List<TopDefinition> tops;
@@ -117,7 +115,6 @@ final class HologramRenderer {
         renderRows(view, top);
     }
 
-
     void renderStanding(@NotNull HologramView view, @NotNull TopDefinition top, @NotNull String viewerName) {
         List<Cell> cells = view.standing();
         if (cells.isEmpty()) {
@@ -156,7 +153,6 @@ final class HologramRenderer {
                         cycle == ButtonAction.Cycle.NEXT ? FormatKey.ARROW_RIGHT : FormatKey.ARROW_LEFT)));
                 case ButtonAction.Slot slot -> renderSlot(view, selected, button, slot, labelScale);
                 case ButtonAction.PeriodTab tab -> renderTab(view, selected, button, tab, tabScale);
-
             }
         }
     }
@@ -185,7 +181,6 @@ final class HologramRenderer {
         fitLabel(view.frame(), button, tabScale);
         recolor(button, active ? colors.tabSelected() : colors.tab());
     }
-
 
     private static void recolor(@NotNull Button button, @NotNull Color color) {
         for (HologramPart panel : button.panels()) {
@@ -303,7 +298,6 @@ final class HologramRenderer {
                            @Nullable LeaderboardSnapshot snapshot, int slot) {
         List<Cell> row = view.rows().get(slot - 1);
         int place = view.scrollOffset() + slot;
-
         List<CellText> texts = rowTexts(top, view.period(), snapshot, place);
         double bottom = geometry.rowBottom(slot);
         for (int index = 0; index < row.size(); index++) {

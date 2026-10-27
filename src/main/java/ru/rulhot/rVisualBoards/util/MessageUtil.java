@@ -6,6 +6,7 @@ import net.kyori.adventure.text.ComponentLike;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
+import net.kyori.adventure.text.minimessage.tag.standard.StandardTags;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.jetbrains.annotations.NotNull;
 
@@ -19,6 +20,15 @@ import java.util.regex.Pattern;
 public class MessageUtil {
 
     private final @NotNull MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
+    private final @NotNull MiniMessage EXTERNAL_MINI_MESSAGE = MiniMessage.builder()
+            .tags(TagResolver.resolver(
+                    StandardTags.color(),
+                    StandardTags.decorations(),
+                    StandardTags.gradient(),
+                    StandardTags.rainbow(),
+                    StandardTags.transition(),
+                    StandardTags.reset()))
+            .build();
     private final @NotNull String TAG_PREFIX = "rvb_";
     private final @NotNull String EXTERNAL_SEPARATOR = " ";
     private final @NotNull Pattern MINI_TAG = Pattern.compile("</?[a-zA-Z#!][^<>]*>");
@@ -50,7 +60,7 @@ public class MessageUtil {
         String text = raw.endsWith(EXTERNAL_SEPARATOR) ? raw : raw + EXTERNAL_SEPARATOR;
         boolean section = text.indexOf(LegacyComponentSerializer.SECTION_CHAR) >= 0;
         if (!section && MINI_TAG.matcher(text).find()) {
-            return MINI_MESSAGE.deserialize(text);
+            return EXTERNAL_MINI_MESSAGE.deserialize(text);
         }
         LegacyComponentSerializer serializer = section
                 ? LegacyComponentSerializer.legacySection()

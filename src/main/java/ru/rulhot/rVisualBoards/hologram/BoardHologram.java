@@ -40,7 +40,6 @@ public final class BoardHologram {
     private static final int MAX_NEW_VIEWS_PER_TICK = 3;
     private static final long CATCH_UP_DELAY_TICKS = 1L;
 
-
     private final @NotNull HologramContext context;
     private final @NotNull PlacedBoard board;
 
@@ -90,7 +89,6 @@ public final class BoardHologram {
         return board.world();
     }
 
-
     public void start() {
         SchedulerUtil scheduler = context.scheduler();
         Settings settings = context.settings();
@@ -100,7 +98,6 @@ public final class BoardHologram {
             hoverTask = scheduler.runAtTimer(origin, this::hoverTick, FIRST_TICK_DELAY,
                     settings.advanced().hoverCheckIntervalTicks());
         }
-
     }
 
     public void stop() {
@@ -111,7 +108,7 @@ public final class BoardHologram {
             clearState();
             return;
         }
-        context.scheduler().runAt(origin, this::despawnAll);
+        context.scheduler().runAt(origin, this::clearState);
     }
 
     public void shutdown() {
@@ -202,10 +199,8 @@ public final class BoardHologram {
         stopped = true;
         cancel(viewerTask);
         cancel(hoverTask);
-
         viewerTask = null;
         hoverTask = null;
-
         return true;
     }
 
@@ -221,7 +216,6 @@ public final class BoardHologram {
                 yield tops.get(Math.floorMod(index + cycle.step(), tops.size()));
             }
             case ButtonAction.PeriodTab tab -> current;
-
         };
     }
 
@@ -281,7 +275,10 @@ public final class BoardHologram {
         int created = 0;
         boolean pending = false;
         Set<UUID> present = new HashSet<>();
-        for (Player player : origin.getNearbyPlayers(keepRadius)) {
+        for (Player player : frame.world().getPlayers()) {
+            if (!Bukkit.isOwnedByCurrentRegion(player)) {
+                continue;
+            }
             Location position = player.getLocation(viewerPosition);
             double deltaX = position.getX() - origin.getX();
             double deltaY = position.getY() - origin.getY();
@@ -514,10 +511,6 @@ public final class BoardHologram {
             return;
         }
         view.destroy();
-    }
-
-    private void despawnAll() {
-        clearState();
     }
 
     private void clearState() {

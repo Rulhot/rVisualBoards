@@ -14,20 +14,17 @@ import ru.rulhot.rVisualBoards.model.BoardLayout.Spacing;
 import ru.rulhot.rVisualBoards.model.BoardLayout.Tabs;
 import ru.rulhot.rVisualBoards.model.BoardLayout.Table;
 import ru.rulhot.rVisualBoards.model.BoardType;
-
 import ru.rulhot.rVisualBoards.model.PlacedBoard;
 import ru.rulhot.rVisualBoards.model.Settings.Placeholders;
 import ru.rulhot.rVisualBoards.model.TopDefinition;
 import ru.rulhot.rVisualBoards.model.TopDefinition.FormatKey;
 import ru.rulhot.rVisualBoards.model.TopDefinition.Period;
-
 import ru.rulhot.rVisualBoards.util.logger.Logger;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.LinkedHashMap;

@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import me.clip.placeholderapi.PlaceholderAPI;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
+import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import ru.rulhot.rVisualBoards.model.LeaderboardSnapshot;
@@ -33,7 +34,8 @@ public final class LeaderboardService {
 
     private static final @NotNull String BOARD_TOKEN = "{board}";
     private static final @NotNull String TYPE_TOKEN = "{type}";
-    private static final @NotNull String PLACE_TOKEN = "{place}";    private static final char PLACEHOLDER_MARK = '%';
+    private static final @NotNull String PLACE_TOKEN = "{place}";
+    private static final char PLACEHOLDER_MARK = '%';
     private static final long FIRST_REFRESH_DELAY_TICKS = 1L;
     private static final int PERSONAL_PLACE = 0;
     private static final long MIN_ACTIVE_MILLIS = 60_000L;
@@ -60,7 +62,6 @@ public final class LeaderboardService {
         for (TopDefinition top : tops) {
             boards.add(top.board());
             defaults.add(new Key(top.board(), top.defaultPeriod()));
-
             if (!top.placeholders().isEmpty()) {
                 placeholders.put(top.board(), settings.advanced().placeholders().with(top.placeholders()));
             }
@@ -114,8 +115,12 @@ public final class LeaderboardService {
 
     public void watch(@NotNull UUID viewerId, @NotNull String viewerName, @NotNull String board,
                       @NotNull Period period) {
-        demands.computeIfAbsent(viewerId, id -> new Demand(viewerName, ConcurrentHashMap.newKeySet()))
-                .keys().add(new Key(board, period));
+        Key key = new Key(board, period);
+        demands.compute(viewerId, (id, demand) -> {
+            Demand target = demand == null ? new Demand(viewerName, ConcurrentHashMap.newKeySet()) : demand;
+            target.keys().add(key);
+            return target;
+        });
     }
 
     public void forget(@NotNull UUID viewerId) {
@@ -126,15 +131,16 @@ public final class LeaderboardService {
     public @NotNull CompletableFuture<Void> fetchStanding(@NotNull UUID viewerId, @NotNull String viewerName,
                                                           @NotNull String board, @NotNull Period period) {
         CompletableFuture<Void> future = new CompletableFuture<>();
-        if (source == null) {
+        Player player = Bukkit.getPlayer(viewerId);
+        if (source == null || player == null) {
             future.complete(null);
             return future;
         }
-        scheduler.runAsync(() -> {
+        scheduler.runFor(player, () -> {
             try {
                 Source current = source;
                 if (current != null && current.boards().contains(board)) {
-                    loadStanding(current, viewerId, viewerName, new Key(board, period));
+                    loadStanding(current, player, new Key(board, period));
                 }
             } finally {
                 future.complete(null);
@@ -177,15 +183,18 @@ public final class LeaderboardService {
             if (demand == null) {
                 continue;
             }
-            if (Bukkit.getPlayer(viewerId) == null) {
+            Player player = Bukkit.getPlayer(viewerId);
+            if (player == null) {
                 standings.remove(viewerId);
                 continue;
             }
-            for (Key key : demand.keys()) {
-                if (current.boards().contains(key.id())) {
-                    loadStanding(current, viewerId, demand.viewerName(), key);
+            scheduler.runFor(player, () -> {
+                for (Key key : demand.keys()) {
+                    if (source == current && current.boards().contains(key.id())) {
+                        loadStanding(current, player, key);
+                    }
                 }
-            }
+            });
         }
     }
 
@@ -212,27 +221,38 @@ public final class LeaderboardService {
         if (previous != null && previous.complete() == complete && previous.entries().equals(entries)) {
             return;
         }
-        snapshots.put(key, new LeaderboardSnapshot(versions.incrementAndGet(), entries, complete));
+        LeaderboardSnapshot snapshot = new LeaderboardSnapshot(versions.incrementAndGet(), entries, complete);
+        snapshots.put(key, snapshot);
+        if (source != current) {
+            snapshots.remove(key, snapshot);
+            return;
+        }
         Logger.debug("Обновлён борд " + key.id() + " за период " + key.period().key());
     }
 
-    private void loadStanding(@NotNull Source current, @NotNull UUID viewerId, @NotNull String viewerName,
-                              @NotNull Key key) {
+    private void loadStanding(@NotNull Source current, @NotNull Player player, @NotNull Key key) {
+        UUID viewerId = player.getUniqueId();
+        Standing standing = readStanding(current, player, key);
+        Map<Key, Standing> entries = standings.computeIfAbsent(viewerId, id -> new ConcurrentHashMap<>());
+        entries.put(key, standing);
+        if (source != current || !player.isOnline()) {
+            entries.remove(key, standing);
+            standings.remove(viewerId, Map.of());
+        }
+    }
+
+    private @NotNull Standing readStanding(@NotNull Source current, @NotNull Player player, @NotNull Key key) {
         Placeholders placeholders = current.placeholders(key);
         if (placeholders.position().isBlank()) {
-            standings.computeIfAbsent(viewerId, id -> new ConcurrentHashMap<>())
-                    .put(key, standingFromSnapshot(key, viewerName));
-            return;
+            return standingFromSnapshot(key, player.getName());
         }
-        OfflinePlayer player = Bukkit.getOfflinePlayer(viewerId);
         String rawPosition = resolve(player, fill(placeholders.position(), key, PERSONAL_PLACE));
         String value = resolve(player, fill(placeholders.personalValue(), key, PERSONAL_PLACE)).trim();
         boolean known = !value.isEmpty() && !value.equals(placeholders.emptyName()) && !isUnresolved(value);
         int parsed = LeaderboardSnapshot.parsePosition(rawPosition);
-        int position = known && isConfirmed(key, parsed, viewerName) ? parsed : LeaderboardSnapshot.UNRANKED;
-        Standing standing = new Standing(String.valueOf(position), known ? value : Standing.UNKNOWN.value(),
+        int position = known && isConfirmed(key, parsed, player.getName()) ? parsed : LeaderboardSnapshot.UNRANKED;
+        return new Standing(String.valueOf(position), known ? value : Standing.UNKNOWN.value(),
                 position > LeaderboardSnapshot.UNRANKED);
-        standings.computeIfAbsent(viewerId, id -> new ConcurrentHashMap<>()).put(key, standing);
     }
 
     private @NotNull Standing standingFromSnapshot(@NotNull Key key, @NotNull String viewerName) {

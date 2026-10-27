@@ -19,6 +19,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -47,13 +48,13 @@ public final class BoardRepository {
     private final @NotNull Object fileLock = new Object();
 
     private volatile boolean loaded;
-
-    public boolean isLoaded() {
-        return loaded;
-    }
+    private volatile boolean dirty;
 
     public boolean load() {
         synchronized (fileLock) {
+            if (dirty) {
+                write();
+            }
             File file = file();
             if (file.exists()) {
                 YamlConfiguration yaml = read(file);
@@ -103,8 +104,8 @@ public final class BoardRepository {
         return true;
     }
 
-    public boolean replace(@NotNull PlacedBoard board) {
-        if (boards.replace(board.id(), board) == null) {
+    public boolean replace(@NotNull PlacedBoard current, @NotNull PlacedBoard edited) {
+        if (!boards.replace(current.id(), current, edited)) {
             return false;
         }
         saveAsync();
@@ -124,13 +125,20 @@ public final class BoardRepository {
     }
 
     private void saveAsync() {
+        dirty = true;
         scheduler.runAsync(this::write);
     }
 
     private void readInto(@Nullable ConfigurationSection root) {
-        boards.clear();
+        Map<String, PlacedBoard> read = parse(root);
+        boards.keySet().retainAll(read.keySet());
+        boards.putAll(read);
+    }
+
+    private static @NotNull Map<String, PlacedBoard> parse(@Nullable ConfigurationSection root) {
+        Map<String, PlacedBoard> read = new HashMap<>();
         if (root == null) {
-            return;
+            return read;
         }
         for (String rawId : root.getKeys(false)) {
             String id = PlacedBoard.normalizeId(rawId);
@@ -141,7 +149,7 @@ public final class BoardRepository {
                 continue;
             }
             String defaultTop = section.getString(DEFAULT_TOP);
-            boards.put(id, new PlacedBoard(
+            read.put(id, new PlacedBoard(
                     id,
                     section.getString(TYPE, "").toLowerCase(Locale.ROOT),
                     world,
@@ -153,6 +161,7 @@ public final class BoardRepository {
                     defaultTop == null ? null : defaultTop.toLowerCase(Locale.ROOT),
                     section.getBoolean(HIDDEN, false)));
         }
+        return read;
     }
 
     private static double readScale(@NotNull String id, @NotNull ConfigurationSection section) {
@@ -170,6 +179,7 @@ public final class BoardRepository {
             if (!loaded) {
                 return;
             }
+            dirty = false;
             YamlConfiguration yaml = new YamlConfiguration();
             ConfigurationSection root = yaml.createSection(ROOT);
             for (PlacedBoard board : all()) {

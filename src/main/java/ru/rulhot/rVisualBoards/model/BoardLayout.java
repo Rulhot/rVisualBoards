@@ -79,7 +79,6 @@ public record BoardLayout(
         public static final @NotNull String SIDE = "buttons.side";
         public static final @NotNull String SIDE_WIDTH = "buttons.side-width";
 
-
         public static final boolean DEFAULT_ENABLED = true;
         public static final int DEFAULT_VISIBLE = 3;
         public static final boolean DEFAULT_ARROWS = true;
@@ -96,7 +95,6 @@ public record BoardLayout(
             LEFT,
             RIGHT
         }
-
 
         public static final int MIN_VISIBLE = 1;
         public static final int MAX_VISIBLE = 30;
@@ -197,7 +195,6 @@ public record BoardLayout(
         public static final @NotNull String BUTTONS_GAP = "spacing.buttons-gap";
         public static final @NotNull String DEPTH_STEP = "spacing.depth-step";
 
-
         public static final double DEFAULT_PADDING = 0.1D;
         public static final double DEFAULT_TITLE_HEIGHT = 0.26D;
         public static final double DEFAULT_SUBTITLE_HEIGHT = 0D;
@@ -207,7 +204,6 @@ public record BoardLayout(
         public static final double DEFAULT_BUTTONS_MARGIN = 0.24D;
         public static final double DEFAULT_BUTTONS_GAP = 0.13D;
         public static final double DEFAULT_DEPTH_STEP = 0.01D;
-
 
         public static final double MAX_DEPTH_STEP = 0.1D;
     }

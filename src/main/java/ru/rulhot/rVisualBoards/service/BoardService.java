@@ -44,16 +44,17 @@ public final class BoardService {
     }
 
     public @NotNull EditResult edit(@NotNull String id, @NotNull UnaryOperator<PlacedBoard> edit) {
-        PlacedBoard current = repository.find(id);
-        if (current == null) {
-            return new EditResult.NotFound();
+        while (true) {
+            PlacedBoard current = repository.find(id);
+            if (current == null) {
+                return new EditResult.NotFound();
+            }
+            PlacedBoard edited = edit.apply(current);
+            if (repository.replace(current, edited)) {
+                holograms.respawn(edited);
+                return new EditResult.Edited(edited);
+            }
         }
-        PlacedBoard edited = edit.apply(current);
-        if (!repository.replace(edited)) {
-            return new EditResult.NotFound();
-        }
-        holograms.respawn(edited);
-        return new EditResult.Edited(edited);
     }
 
     public @NotNull RemoveResult remove(@NotNull String id) {

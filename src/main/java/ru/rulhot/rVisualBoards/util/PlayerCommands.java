@@ -13,7 +13,7 @@ public class PlayerCommands {
     private final @NotNull String CONSOLE_PREFIX = "console:";
     private final @NotNull String PLAYER_PREFIX = "player:";
     private final @NotNull String SLASH = "/";
-    private final @NotNull Pattern SAFE_NAME = Pattern.compile("[A-Za-z0-9_.*-]{1,32}");
+    private final @NotNull Pattern SAFE_NAME = Pattern.compile("[A-Za-z0-9_.-]{1,32}");
 
     public boolean isSafeName(@NotNull String name) {
         return SAFE_NAME.matcher(name).matches();

@@ -19,6 +19,7 @@ import java.util.Map;
 public final class RemoveSubCommand implements SubCommand {
 
     private static final @NotNull String NAME = "remove";
+    private static final @NotNull String CONFIRM = "confirm";
 
     private final @NotNull ConfigManager config;
     private final @NotNull BoardService boards;
@@ -29,12 +30,27 @@ public final class RemoveSubCommand implements SubCommand {
                 .executes(context -> SubCommand.usage(config, context, "remove.usage"))
                 .then(SubCommand.board(boards)
                         .executes(context -> {
+                            askConfirm(context.getSource().getSender(), SubCommand.boardId(context));
+                            return Command.SINGLE_SUCCESS;
+                        })
+                        .then(Commands.literal(CONFIRM).executes(context -> {
                             remove(context.getSource().getSender(), SubCommand.boardId(context));
                             return Command.SINGLE_SUCCESS;
-                        }));
+                        })));
+    }
+
+    private void askConfirm(@NotNull CommandSender sender, @NotNull String id) {
+        if (boards.find(id) == null) {
+            config.send(sender, "board-not-found", Map.of("id", id));
+            return;
+        }
+        config.send(sender, "remove.confirm", Map.of("id", id));
     }
 
     private void remove(@NotNull CommandSender sender, @NotNull String id) {
+        if (!SubCommand.isReady(config, sender)) {
+            return;
+        }
         switch (boards.remove(id)) {
             case RemoveResult.Removed(PlacedBoard board) ->
                     config.send(sender, "remove.success", board.placeholders());

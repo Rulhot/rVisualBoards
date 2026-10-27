@@ -53,7 +53,6 @@ final class HologramView {
     private int hoveredRow = BoardGeometry.NO_ROW;
     private int hintedRow = BoardGeometry.NO_ROW;
 
-
     HologramView(@NotNull User viewer, @NotNull BoardFrame frame, @NotNull UUID viewerId, @NotNull String topId,
                  @NotNull Period period, @NotNull HologramPart title, @Nullable HologramPart subtitle,
                  @NotNull List<HologramPart> headers, @NotNull List<List<Cell>> rows,
@@ -162,8 +161,6 @@ final class HologramView {
     boolean isDetached() {
         return detached;
     }
-
-
 
     boolean hasData() {
         return renderedVersion > 0L;

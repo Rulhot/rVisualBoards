@@ -68,7 +68,6 @@ public record Settings(
         updateIntervalSeconds = bounded(UPDATE_INTERVAL, updateIntervalSeconds, MIN_UPDATE_INTERVAL,
                 MAX_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL);
         viewRadius = bounded(VIEW_RADIUS, viewRadius, MIN_VIEW_RADIUS, MAX_VIEW_RADIUS, DEFAULT_VIEW_RADIUS);
-
     }
 
     public long updateIntervalTicks() {
@@ -232,14 +231,10 @@ public record Settings(
         public static final @NotNull String WAVE_STAGGER = "effects.wave.stagger-ticks";
         public static final @NotNull String WAVE_DURATION = "effects.wave.duration-ticks";
 
-
-
         public static final boolean DEFAULT_WAVE = true;
         public static final double DEFAULT_WAVE_HEIGHT = 0.05D;
         public static final int DEFAULT_WAVE_STAGGER = 1;
         public static final int DEFAULT_WAVE_DURATION = 4;
-
-
 
         public static final double MAX_HEIGHT = 1D;
         public static final int MIN_TICKS = 1;
@@ -249,8 +244,6 @@ public record Settings(
             waveHeight = bounded(WAVE_HEIGHT, waveHeight, 0D, MAX_HEIGHT, DEFAULT_WAVE_HEIGHT);
             waveStaggerTicks = bounded(WAVE_STAGGER, waveStaggerTicks, 0, MAX_TICKS, DEFAULT_WAVE_STAGGER);
             waveDurationTicks = bounded(WAVE_DURATION, waveDurationTicks, MIN_TICKS, MAX_TICKS, DEFAULT_WAVE_DURATION);
-
-
         }
     }
 

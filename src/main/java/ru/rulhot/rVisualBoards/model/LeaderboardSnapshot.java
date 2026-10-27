@@ -12,7 +12,6 @@ public record LeaderboardSnapshot(long version, @NotNull List<Entry> entries, bo
 
     private static final @NotNull Pattern NON_DIGITS = Pattern.compile("[^0-9]");
 
-
     public LeaderboardSnapshot {
         entries = List.copyOf(entries);
     }

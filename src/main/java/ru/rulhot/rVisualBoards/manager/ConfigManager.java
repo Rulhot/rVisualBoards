@@ -7,7 +7,6 @@ import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
 import ru.rulhot.rVisualBoards.model.Settings;
 import ru.rulhot.rVisualBoards.model.Settings.Advanced;
 import ru.rulhot.rVisualBoards.model.Settings.Animation;
@@ -25,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
 @RequiredArgsConstructor
@@ -208,18 +208,21 @@ public final class ConfigManager {
     public record Snapshot(@NotNull Settings settings, @NotNull Messages messages) {
     }
 
-    public record Messages(@NotNull String prefix, @NotNull Map<String, String> entries) {
+    public record Messages(@NotNull String prefix, @NotNull Map<String, String> entries,
+                           @NotNull Set<String> reportedMissing) {
 
         private static final @NotNull Messages EMPTY = new Messages("", Map.of());
 
-        public Messages {
-            entries = Map.copyOf(entries);
+        public Messages(@NotNull String prefix, @NotNull Map<String, String> entries) {
+            this(prefix, Map.copyOf(entries), ConcurrentHashMap.newKeySet());
         }
 
         private @NotNull String raw(@NotNull String key) {
             String value = entries.get(key);
             if (value == null) {
-                Logger.warn("В messages.yml нет ключа '" + key + "'");
+                if (reportedMissing.add(key)) {
+                    Logger.warn("В messages.yml нет ключа '" + key + "'");
+                }
                 return "";
             }
             return value;

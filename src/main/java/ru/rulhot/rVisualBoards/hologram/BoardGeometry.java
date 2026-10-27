@@ -134,7 +134,6 @@ record BoardGeometry(
         return slot < 1 ? NO_ROW : slot;
     }
 
-
     boolean isOnRows(double x, double y) {
         return Math.abs(x) <= width / 2D && y >= tableBottom && y <= tableTop;
     }

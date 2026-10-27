@@ -8,7 +8,10 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import ru.rulhot.rVisualBoards.util.logger.Logger;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -25,6 +28,7 @@ public final class UpdateChecker {
     private static final @NotNull String TAG = "tag_name";
     private static final @NotNull Duration TIMEOUT = Duration.ofSeconds(10L);
     private static final int HTTP_OK = 200;
+    private static final int MAX_BODY_BYTES = 1024 * 1024;
     private static final @NotNull Pattern NOT_VERSION = Pattern.compile("[^0-9.]");
     private static final @NotNull Pattern SEPARATOR = Pattern.compile("\\.");
 
@@ -37,22 +41,37 @@ public final class UpdateChecker {
                 .header("User-Agent", USER_AGENT + currentVersion)
                 .GET()
                 .build();
-        client.sendAsync(request, HttpResponse.BodyHandlers.ofString()).whenComplete((response, error) -> {
-            client.shutdown();
-            if (error != null) {
-                Logger.warn("Не удалось проверить обновления: " + error.getMessage());
-                return;
+        client.sendAsync(request, HttpResponse.BodyHandlers.ofInputStream()).whenComplete((response, error) -> {
+            try {
+                if (error != null) {
+                    Logger.warn("Не удалось проверить обновления: " + error.getMessage());
+                    return;
+                }
+                report(response);
+            } finally {
+                client.shutdown();
             }
-            report(response);
         });
     }
 
-    private void report(@NotNull HttpResponse<String> response) {
-        if (response.statusCode() != HTTP_OK) {
-            Logger.warn("Не удалось проверить обновления: GitHub ответил кодом " + response.statusCode());
+    private void report(@NotNull HttpResponse<InputStream> response) {
+        String body;
+        try (InputStream stream = response.body()) {
+            if (response.statusCode() != HTTP_OK) {
+                Logger.warn("Не удалось проверить обновления: GitHub ответил кодом " + response.statusCode());
+                return;
+            }
+            byte[] bytes = stream.readNBytes(MAX_BODY_BYTES + 1);
+            if (bytes.length > MAX_BODY_BYTES) {
+                Logger.warn("Не удалось проверить обновления: ответ GitHub слишком большой");
+                return;
+            }
+            body = new String(bytes, StandardCharsets.UTF_8);
+        } catch (IOException exception) {
+            Logger.warn("Не удалось проверить обновления: " + exception.getMessage());
             return;
         }
-        String latestVersion = parseTag(response.body());
+        String latestVersion = parseTag(body);
         if (latestVersion == null) {
             Logger.warn("Не удалось проверить обновления: в ответе GitHub нет версии");
             return;

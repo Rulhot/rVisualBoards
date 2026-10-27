@@ -36,7 +36,6 @@ public record TopDefinition(
     public static final @NotNull String ROW_CLICK = "row-click";
     public static final @NotNull String SWITCH_SOUND = "switch-sound";
 
-
     public static final @NotNull List<Period> DEFAULT_PERIODS =
             List.of(Period.ALLTIME, Period.MONTHLY, Period.WEEKLY, Period.DAILY);
 
@@ -46,7 +45,6 @@ public record TopDefinition(
         placeholders = Map.copyOf(placeholders);
         periodNames = Map.copyOf(periodNames);
         rowClick = List.copyOf(rowClick);
-
     }
 
     public @NotNull String format(@NotNull FormatKey key) {

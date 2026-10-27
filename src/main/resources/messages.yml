@@ -28,6 +28,7 @@ movehere:
 
 remove:
   usage: "{prefix} <white>Использование: <#82ABF0>/{command} remove [id]"
+  confirm: "{prefix} <white>Табло <#82ABF0>{id}</#82ABF0> будет удалено насовсем. Подтверди: <#82ABF0>/{command} remove {id} confirm</#82ABF0>. Спрятать без удаления: <#82ABF0>/{command} edit {id} hide"
   success: "{prefix} <white>Табло <#82ABF0>{id}</#82ABF0> удалено."
 
 list:
@@ -37,7 +38,7 @@ list:
   entry-hidden: " <dark_gray>•</dark_gray> <gray>{id}</gray> <dark_gray>»</dark_gray> <gray>{type}, {world} {x} {y} {z}, спрятано"
 
 reload:
-  done: "{prefix} <white>Конфиги перезагружены."
+  done: "{prefix} <white>Конфиги перезагружены. Табло: <#82ABF0>{boards}</#82ABF0>, видов: <#82ABF0>{types}"
   busy: "{prefix} <white>Перезагрузка уже идёт. Подожди пару секунд и повтори."
   failed: "{prefix} <white>Конфиги не перезагружены, работают прежние. Файл и строка с ошибкой есть в консоли."
 
@@ -72,4 +73,4 @@ edit:
   top-missing: "{prefix} <white>Топа <#82ABF0>{top}</#82ABF0> нет на табло <#82ABF0>{id}</#82ABF0>. Список топов: <#82ABF0>/{command} edit {id}"
   no-file: "<gray>нет файла tops/{type}.yml"
 
-config-version: 3 #не трогать!!!
+config-version: 4 # версия файла, плагин меняет её сам

@@ -27,7 +27,6 @@ public final class ReloadService {
     private final @NotNull LeaderboardService leaderboards;
     private final @NotNull HologramManager holograms;
 
-
     private final @NotNull AtomicBoolean reloading = new AtomicBoolean();
     private volatile boolean shutdown;
 
@@ -70,7 +69,8 @@ public final class ReloadService {
                 try {
                     finish(result, apply(loaded));
                 } catch (RuntimeException exception) {
-                    Logger.error("Не удалось применить конфигурацию, оставляю прежнюю", exception);
+                    Logger.error("Не удалось применить конфигурацию, табло могут быть не запущены. "
+                            + "Исправь ошибку и перезагрузи конфиг", exception);
                     finish(result, new Result.Failed());
                 }
             });
@@ -80,7 +80,7 @@ public final class ReloadService {
 
     private @Nullable Loaded read() {
         try {
-            if (!boards.isLoaded() && !boards.load()) {
+            if (!boards.load()) {
                 return null;
             }
             ConfigManager.Snapshot snapshot = config.read();
@@ -99,19 +99,18 @@ public final class ReloadService {
         if (shutdown) {
             return new Result.Failed();
         }
-        holograms.stop();
-        leaderboards.stop();
-        config.apply(loaded.config());
-        tops.apply(loaded.types());
         Settings settings = loaded.config().settings();
-        Logger.setDebugEnabled(settings.debug());
         List<TopDefinition> allTops = loaded.types().stream().flatMap(type -> type.tops().stream()).toList();
         int places = loaded.types().stream()
                 .mapToInt(type -> settings.scroll().loadedPlaces(type.layout().table().rows()))
                 .max()
                 .orElse(0);
+        holograms.stop();
+        leaderboards.stop();
+        config.apply(loaded.config());
+        tops.apply(loaded.types());
+        Logger.setDebugEnabled(settings.debug());
         leaderboards.start(settings, allTops, places);
-
         holograms.start();
         Logger.debug("Конфигурация применена: boards=" + holograms.size() + ", types=" + loaded.types().size());
         return new Result.Success(holograms.size(), loaded.types().size());
