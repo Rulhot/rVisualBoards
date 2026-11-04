@@ -23,6 +23,7 @@ public class MessageUtil {
     private final @NotNull MiniMessage EXTERNAL_MINI_MESSAGE = MiniMessage.builder()
             .tags(TagResolver.resolver(
                     StandardTags.color(),
+                    StandardTags.shadowColor(),
                     StandardTags.decorations(),
                     StandardTags.gradient(),
                     StandardTags.rainbow(),
@@ -32,6 +33,8 @@ public class MessageUtil {
     private final @NotNull String TAG_PREFIX = "rvb_";
     private final @NotNull String EXTERNAL_SEPARATOR = " ";
     private final @NotNull Pattern MINI_TAG = Pattern.compile("</?[a-zA-Z#!][^<>]*>");
+    private final @NotNull Pattern TRAILING_FORMAT = Pattern.compile(
+            "(?:[&§](?:x(?:[&§][0-9a-fA-F]){6}|#[0-9a-fA-F]{6}|[0-9a-fk-orA-FK-OR])|</?[a-zA-Z#!][^<>]*>)+$");
 
     public @NotNull Component parseText(@NotNull String text) {
         return MINI_MESSAGE.deserialize(text);
@@ -57,7 +60,8 @@ public class MessageUtil {
         if (raw.isBlank()) {
             return Component.empty();
         }
-        String text = raw.endsWith(EXTERNAL_SEPARATOR) ? raw : raw + EXTERNAL_SEPARATOR;
+        String visible = TRAILING_FORMAT.matcher(raw).replaceFirst("");
+        String text = visible.endsWith(EXTERNAL_SEPARATOR) ? raw : raw + EXTERNAL_SEPARATOR;
         boolean section = text.indexOf(LegacyComponentSerializer.SECTION_CHAR) >= 0;
         if (!section && MINI_TAG.matcher(text).find()) {
             return EXTERNAL_MINI_MESSAGE.deserialize(text);
