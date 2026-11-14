@@ -153,6 +153,8 @@ final class HologramRenderer {
                         cycle == ButtonAction.Cycle.NEXT ? FormatKey.ARROW_RIGHT : FormatKey.ARROW_LEFT)));
                 case ButtonAction.Slot slot -> renderSlot(view, selected, button, slot, labelScale);
                 case ButtonAction.PeriodTab tab -> renderTab(view, selected, button, tab, tabScale);
+                case ButtonAction.Table table -> {
+                }
             }
         }
     }

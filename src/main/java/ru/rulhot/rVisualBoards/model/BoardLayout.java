@@ -14,7 +14,8 @@ public record BoardLayout(
         @NotNull Colors colors,
         @NotNull Spacing spacing,
         @NotNull Scrollbar scrollbar,
-        @NotNull Footer footer
+        @NotNull Footer footer,
+        @NotNull Clicks clicks
 ) {
 
     public static final @NotNull Color TRANSPARENT = Color.fromARGB(0, 0, 0, 0);
@@ -226,5 +227,27 @@ public record BoardLayout(
         public static final @NotNull String COLOR = "footer.color";
 
         public static final @NotNull Footer NONE = new Footer(0D, TRANSPARENT);
+    }
+
+    public record Clicks(@NotNull MouseKey tops, @NotNull MouseKey arrows, @NotNull MouseKey periods,
+                         @NotNull MouseKey table) {
+
+        public static final @NotNull String TOPS = "clicks.tops";
+        public static final @NotNull String ARROWS = "clicks.arrows";
+        public static final @NotNull String PERIODS = "clicks.periods";
+        public static final @NotNull String TABLE = "clicks.table";
+
+        public static final @NotNull Clicks ANY = new Clicks(MouseKey.ANY, MouseKey.ANY, MouseKey.ANY, MouseKey.ANY);
+
+        public enum MouseKey {
+            LEFT,
+            RIGHT,
+            ANY,
+            NONE;
+
+            public boolean accepts(@NotNull MouseKey pressed) {
+                return this == ANY || this == pressed;
+            }
+        }
     }
 }

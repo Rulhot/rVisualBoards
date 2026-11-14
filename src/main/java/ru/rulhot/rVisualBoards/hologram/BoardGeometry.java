@@ -15,6 +15,7 @@ record BoardGeometry(
         int tabCount,
         double buttonWidth,
         @NotNull List<Box> boxes,
+        @NotNull List<Box> tableBoxes,
         double standingBottom,
         double tableBottom,
         double rowsBottom,
@@ -33,10 +34,12 @@ record BoardGeometry(
 
     private static final double MIN_BUTTON_WIDTH = 0.05D;
     private static final int ARROW_COUNT = 2;
-    private static final int MIN_TABS = 2;
+    static final int MIN_PERIODS = 2;
+    private static final double TABLE_TILE_WIDTH = 0.5D;
 
     BoardGeometry {
         boxes = List.copyOf(boxes);
+        tableBoxes = List.copyOf(tableBoxes);
     }
 
     static @NotNull BoardGeometry of(@NotNull BoardLayout layout, int topCount, int periodCount) {
@@ -47,7 +50,7 @@ record BoardGeometry(
         double line = LINE * table.textScale();
         int count = buttons.enabled() && topCount > 1 ? Math.min(topCount, buttons.visible()) : 0;
         int arrowCount = count > 0 && buttons.arrows() ? ARROW_COUNT : 0;
-        int tabCount = tabs.enabled() && periodCount >= MIN_TABS ? periodCount : 0;
+        int tabCount = tabs.enabled() && periodCount >= MIN_PERIODS ? periodCount : 0;
         boolean onSide = buttons.side() != BoardLayout.Buttons.Side.BOTTOM;
         double arrowsWidth = arrowCount * (buttons.arrowWidth() + spacing.buttonsGap());
         double buttonWidth = count == 0 ? 0D : onSide ? buttons.sideWidth() : Math.max(MIN_BUTTON_WIDTH,
@@ -88,8 +91,11 @@ record BoardGeometry(
                 boxes.add(new Box(x, tabsBottom, tabWidth, tabs.height()));
             }
         }
+        boolean rightClickTable = periodCount >= MIN_PERIODS
+                && layout.clicks().table().accepts(BoardLayout.Clicks.MouseKey.RIGHT);
+        List<Box> tableBoxes = rightClickTable ? tableTiles(table.width(), tableBottom, tableTop) : List.of();
         return new BoardGeometry(table.width(), line, table.rows(), count, arrowCount, tabCount, buttonWidth, boxes,
-                standingBottom, tableBottom, rowsBottom, tableTop, headerBottom, tabsBottom, titleBottom, height);
+                tableBoxes, standingBottom, tableBottom, rowsBottom, tableTop, headerBottom, tabsBottom, titleBottom, height);
     }
 
     private static void sideColumn(@NotNull List<Box> boxes, @NotNull BoardLayout.Buttons buttons,
@@ -109,6 +115,16 @@ record BoardGeometry(
             boxes.add(new Box(x, top - step + spacing.buttonsGap(), width, buttons.height()));
             boxes.add(new Box(x, top - cells * step + spacing.buttonsGap(), width, buttons.height()));
         }
+    }
+
+    private static @NotNull List<Box> tableTiles(double width, double bottom, double top) {
+        int tiles = (int) Math.ceil(width / TABLE_TILE_WIDTH);
+        double tileWidth = width / tiles;
+        List<Box> result = new ArrayList<>();
+        for (int index = 0; index < tiles; index++) {
+            result.add(new Box(-width / 2D + tileWidth / 2D + index * tileWidth, bottom, tileWidth, top - bottom));
+        }
+        return result;
     }
 
     static double textBottom(double boxBottom, double boxHeight, double scale) {

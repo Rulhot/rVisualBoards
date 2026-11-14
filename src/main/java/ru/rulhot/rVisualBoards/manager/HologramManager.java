@@ -15,6 +15,7 @@ import ru.rulhot.rVisualBoards.hologram.HitboxRegistry;
 import ru.rulhot.rVisualBoards.hologram.HologramContext;
 import ru.rulhot.rVisualBoards.hologram.HologramKeys;
 import ru.rulhot.rVisualBoards.hologram.TopSelections;
+import ru.rulhot.rVisualBoards.model.BoardLayout.Clicks.MouseKey;
 import ru.rulhot.rVisualBoards.model.BoardType;
 import ru.rulhot.rVisualBoards.model.PlacedBoard;
 import ru.rulhot.rVisualBoards.model.Settings;
@@ -36,6 +37,7 @@ public final class HologramManager {
     private static final @NotNull String PLACE_TOKEN = "{place}";
     private static final @NotNull String PLAYER_TOKEN = "{player}";
     private static final @NotNull String TOP_TOKEN = "{top}";
+    private static final long INTERACT_SWING_MILLIS = 500L;
 
     private final @NotNull Plugin plugin;
     private final @NotNull SchedulerUtil scheduler;
@@ -49,6 +51,7 @@ public final class HologramManager {
     private final @NotNull HitboxRegistry hitboxes = new HitboxRegistry();
     private final @NotNull Map<String, BoardHologram> holograms = new ConcurrentHashMap<>();
     private final @NotNull Map<UUID, Long> lastClicks = new ConcurrentHashMap<>();
+    private final @NotNull Map<UUID, Long> interacts = new ConcurrentHashMap<>();
 
     private volatile @Nullable Settings settings;
 
@@ -72,6 +75,7 @@ public final class HologramManager {
         }
         holograms.clear();
         lastClicks.clear();
+        interacts.clear();
     }
 
     public synchronized void shutdown() {
@@ -81,6 +85,7 @@ public final class HologramManager {
         }
         holograms.clear();
         lastClicks.clear();
+        interacts.clear();
         selections.clear();
         hitboxes.clear();
     }
@@ -128,10 +133,11 @@ public final class HologramManager {
         }
     }
 
-    public void press(@NotNull Player player, @NotNull String boardId, @NotNull ButtonAction action) {
+    public void press(@NotNull Player player, @NotNull String boardId, @NotNull ButtonAction action,
+                      @NotNull MouseKey pressed) {
         Settings current = settings;
         BoardHologram hologram = holograms.get(boardId);
-        if (current == null || hologram == null) {
+        if (current == null || hologram == null || !hologram.accepts(action, pressed)) {
             return;
         }
         if (isCoolingDown(player.getUniqueId(), current)) {
@@ -139,9 +145,44 @@ public final class HologramManager {
         }
         lastClicks.put(player.getUniqueId(), System.currentTimeMillis());
         BoardHologram.Selected selected = hologram.select(player, action);
-        if (selected == null) {
+        if (selected != null) {
+            playSelectSound(player, current, selected);
+        }
+    }
+
+    public void markInteract(@NotNull UUID viewerId) {
+        interacts.put(viewerId, System.currentTimeMillis());
+    }
+
+    public void swing(@NotNull Player player) {
+        Settings current = settings;
+        UUID viewerId = player.getUniqueId();
+        Long interacted = interacts.remove(viewerId);
+        if (interacted != null && System.currentTimeMillis() - interacted < INTERACT_SWING_MILLIS) {
             return;
         }
+        if (current == null || isCoolingDown(viewerId, current)) {
+            return;
+        }
+        for (BoardHologram hologram : holograms.values()) {
+            BoardHologram.RowClick click = hologram.clickRow(player);
+            if (click != null) {
+                clickRow(player, current, click);
+                return;
+            }
+        }
+        for (BoardHologram hologram : holograms.values()) {
+            BoardHologram.Selected selected = hologram.flipPeriod(player);
+            if (selected != null) {
+                lastClicks.put(viewerId, System.currentTimeMillis());
+                playSelectSound(player, current, selected);
+                return;
+            }
+        }
+    }
+
+    private static void playSelectSound(@NotNull Player player, @NotNull Settings current,
+                                        @NotNull BoardHologram.Selected selected) {
         Sound sound = current.clicks().sound();
         if (selected.topChanged()) {
             Sound topSound = selected.top().switchSound();
@@ -153,21 +194,7 @@ public final class HologramManager {
         }
     }
 
-    public void clickRow(@NotNull Player player) {
-        Settings current = settings;
-        if (current == null || isCoolingDown(player.getUniqueId(), current)) {
-            return;
-        }
-        BoardHologram.RowClick click = null;
-        for (BoardHologram hologram : holograms.values()) {
-            click = hologram.clickRow(player);
-            if (click != null) {
-                break;
-            }
-        }
-        if (click == null) {
-            return;
-        }
+    private void clickRow(@NotNull Player player, @NotNull Settings current, @NotNull BoardHologram.RowClick click) {
         lastClicks.put(player.getUniqueId(), System.currentTimeMillis());
         String name = click.entry().name();
         if (!PlayerCommands.isSafeName(name) || !PlayerCommands.isSafeName(player.getName())) {
@@ -187,23 +214,23 @@ public final class HologramManager {
         }
     }
 
-    public boolean scroll(@NotNull Player player, int direction) {
+    public void scroll(@NotNull Player player, int direction) {
         Settings current = settings;
         if (current == null || !current.scroll().enabled()) {
-            return false;
+            return;
         }
         int delta = direction * current.scroll().step();
         for (BoardHologram hologram : holograms.values()) {
             if (hologram.scroll(player, delta)) {
-                return true;
+                return;
             }
         }
-        return false;
     }
 
     public void forget(@NotNull UUID viewerId) {
         selections.forget(viewerId);
         lastClicks.remove(viewerId);
+        interacts.remove(viewerId);
         for (BoardHologram hologram : holograms.values()) {
             hologram.forget(viewerId);
         }

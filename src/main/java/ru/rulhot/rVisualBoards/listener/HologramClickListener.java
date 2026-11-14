@@ -10,8 +10,11 @@ import lombok.RequiredArgsConstructor;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import ru.rulhot.rVisualBoards.hologram.ButtonAction;
 import ru.rulhot.rVisualBoards.hologram.HitboxRegistry;
 import ru.rulhot.rVisualBoards.manager.HologramManager;
+import ru.rulhot.rVisualBoards.model.BoardLayout.Clicks.MouseKey;
 import ru.rulhot.rVisualBoards.util.SchedulerUtil;
 
 import java.util.UUID;
@@ -35,21 +38,26 @@ public final class HologramClickListener extends PacketListenerAbstract {
         event.setCancelled(true);
         User user = event.getUser();
         UUID viewerId = user.getUUID();
-        if (viewerId == null || !viewerId.equals(target.viewerId()) || !isClick(packet)) {
+        MouseKey pressed = pressed(packet, target.action());
+        if (viewerId == null || !viewerId.equals(target.viewerId()) || pressed == null) {
             return;
+        }
+        if (pressed == MouseKey.RIGHT) {
+            holograms.markInteract(viewerId);
         }
         Player player = Bukkit.getPlayer(viewerId);
         if (player == null) {
             return;
         }
-        scheduler.runFor(player, () -> holograms.press(player, target.boardId(), target.action()));
+        scheduler.runFor(player, () -> holograms.press(player, target.boardId(), target.action(), pressed));
     }
 
-    private static boolean isClick(@NotNull WrapperPlayClientInteractEntity packet) {
+    private static @Nullable MouseKey pressed(@NotNull WrapperPlayClientInteractEntity packet,
+                                              @NotNull ButtonAction action) {
         return switch (packet.getAction()) {
-            case ATTACK -> true;
-            case INTERACT -> packet.getHand() == InteractionHand.MAIN_HAND;
-            case INTERACT_AT -> false;
+            case ATTACK -> action instanceof ButtonAction.Table ? null : MouseKey.LEFT;
+            case INTERACT -> packet.getHand() == InteractionHand.MAIN_HAND ? MouseKey.RIGHT : null;
+            case INTERACT_AT -> null;
         };
     }
 }

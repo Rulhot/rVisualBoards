@@ -141,14 +141,16 @@ final class HologramSpawner {
             BoardGeometry.Box box = geometry.box(index);
             hitboxes.add(hitbox(viewer, frame, viewerId, box, actionAt(index)));
         }
-
+        for (BoardGeometry.Box box : geometry.tableBoxes()) {
+            hitboxes.add(hitbox(viewer, frame, viewerId, box, ButtonAction.Table.NEXT_PERIOD));
+        }
         return hitboxes;
     }
 
     private @NotNull PacketHitbox hitbox(@NotNull User viewer, @NotNull BoardFrame frame, @NotNull UUID viewerId,
                                          @NotNull BoardGeometry.Box box, @NotNull ButtonAction action) {
         PacketHitbox hitbox = new PacketHitbox(viewer, frame.point(box.x(), box.bottom(), 0D),
-                (float) (box.width() * frame.scale()), (float) (box.height() * frame.scale()), box, action);
+                (float) (box.width() * frame.scale()), (float) (box.height() * frame.scale()));
         context.hitboxes().register(hitbox.entityId(), new HitboxRegistry.Target(boardId, action, viewerId));
         return hitbox;
     }
@@ -178,6 +180,7 @@ final class HologramSpawner {
             case ButtonAction.Slot slot -> colors.button();
             case ButtonAction.Cycle cycle -> colors.arrow();
             case ButtonAction.PeriodTab tab -> colors.tab();
+            case ButtonAction.Table table -> TRANSPARENT;
         };
         double scale = action instanceof ButtonAction.PeriodTab ? tabs.textScale() : buttons.textScale();
         HologramPart panel = panel(viewer, frame, box.x(), box.bottom(), spacing.depthStep(), box.width(), box.height(), fill);

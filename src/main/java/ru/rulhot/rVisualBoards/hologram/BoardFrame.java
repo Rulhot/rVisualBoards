@@ -89,9 +89,9 @@ final class BoardFrame {
         }
         double hitX = offsetX + directionX * distance;
         double hitZ = offsetZ + directionZ * distance;
-        return new Point((hitX * rightX + hitZ * rightZ) / scale, (offsetY + directionY * distance) / scale);
+        return new Point((hitX * rightX + hitZ * rightZ) / scale, (offsetY + directionY * distance) / scale, distance);
     }
 
-    record Point(double x, double y) {
+    record Point(double x, double y, double distance) {
     }
 }

@@ -9,14 +9,14 @@ import org.jetbrains.annotations.NotNull;
 import ru.rulhot.rVisualBoards.manager.HologramManager;
 
 @RequiredArgsConstructor
-public final class HologramRowClickListener implements Listener {
+public final class HologramSwingListener implements Listener {
 
     private final @NotNull HologramManager holograms;
 
     @EventHandler(ignoreCancelled = true)
     public void onSwing(@NotNull PlayerAnimationEvent event) {
         if (event.getAnimationType() == PlayerAnimationType.ARM_SWING) {
-            holograms.clickRow(event.getPlayer());
+            holograms.swing(event.getPlayer());
         }
     }
 }

@@ -23,8 +23,6 @@ public final class HologramScrollListener implements Listener {
         if (shift == 0) {
             return;
         }
-        if (holograms.scroll(event.getPlayer(), shift <= HALF_HOTBAR ? DOWN : UP)) {
-            event.setCancelled(true);
-        }
+        holograms.scroll(event.getPlayer(), shift <= HALF_HOTBAR ? DOWN : UP);
     }
 }

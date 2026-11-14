@@ -7,6 +7,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import ru.rulhot.rVisualBoards.model.BoardLayout;
 import ru.rulhot.rVisualBoards.model.BoardLayout.Buttons;
+import ru.rulhot.rVisualBoards.model.BoardLayout.Clicks;
+import ru.rulhot.rVisualBoards.model.BoardLayout.Clicks.MouseKey;
 import ru.rulhot.rVisualBoards.model.BoardLayout.Colors;
 import ru.rulhot.rVisualBoards.model.BoardLayout.Column;
 import ru.rulhot.rVisualBoards.model.BoardLayout.Columns;
@@ -143,7 +145,16 @@ public final class TopManager {
                         file.color(BoardLayout.Scrollbar.THUMB, BoardLayout.Scrollbar.NONE.thumb())),
                 new BoardLayout.Footer(
                         spacing(file, BoardLayout.Footer.HEIGHT, BoardLayout.Footer.NONE.height()),
-                        file.color(BoardLayout.Footer.COLOR, BoardLayout.Footer.NONE.color())));
+                        file.color(BoardLayout.Footer.COLOR, BoardLayout.Footer.NONE.color())),
+                parseClicks(file));
+    }
+
+    private static @NotNull Clicks parseClicks(@NotNull ConfigFile file) {
+        return new Clicks(
+                file.enumValue(Clicks.TOPS, MouseKey.class, Clicks.ANY.tops()),
+                file.enumValue(Clicks.ARROWS, MouseKey.class, Clicks.ANY.arrows()),
+                file.enumValue(Clicks.PERIODS, MouseKey.class, Clicks.ANY.periods()),
+                file.enumValue(Clicks.TABLE, MouseKey.class, Clicks.ANY.table()));
     }
 
     private static @Nullable TopDefinition parseTop(@NotNull ConfigFile file, @NotNull String key,

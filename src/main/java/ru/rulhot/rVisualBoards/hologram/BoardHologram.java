@@ -13,6 +13,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import ru.rulhot.rVisualBoards.hologram.HologramView.Button;
 import ru.rulhot.rVisualBoards.hologram.HologramView.Cell;
+import ru.rulhot.rVisualBoards.model.BoardLayout.Clicks.MouseKey;
 import ru.rulhot.rVisualBoards.model.LeaderboardSnapshot;
 import ru.rulhot.rVisualBoards.model.LeaderboardSnapshot.Entry;
 import ru.rulhot.rVisualBoards.model.Settings;
@@ -140,6 +141,19 @@ public final class BoardHologram {
         return new Selected(target, target != current);
     }
 
+    public boolean accepts(@NotNull ButtonAction action, @NotNull MouseKey pressed) {
+        return ButtonAction.keyOf(context.layout().clicks(), action).accepts(pressed);
+    }
+
+    public @Nullable Selected flipPeriod(@NotNull Player player) {
+        HologramView view = views.get(player.getUniqueId());
+        if (view == null || !accepts(ButtonAction.Table.NEXT_PERIOD, MouseKey.LEFT)
+                || !isLookingAtRows(player, view.frame(), context.settings().scroll().distance())) {
+            return null;
+        }
+        return select(player, ButtonAction.Table.NEXT_PERIOD);
+    }
+
     public @Nullable RowClick clickRow(@NotNull Player player) {
         HologramView view = views.get(player.getUniqueId());
         TopDefinition top = view == null ? null : topsById.get(view.topId());
@@ -151,7 +165,7 @@ public final class BoardHologram {
                 ? view.frame().project(eye.getX(), eye.getY(), eye.getZ(), eye.getYaw(), eye.getPitch(),
                 context.settings().scroll().distance())
                 : null;
-        int slot = point == null ? BoardGeometry.NO_ROW : geometry.rowAt(point.x(), point.y());
+        int slot = point == null || isBlocked(player, point) ? BoardGeometry.NO_ROW : geometry.rowAt(point.x(), point.y());
         LeaderboardSnapshot snapshot = context.leaderboards().snapshot(top.board(), view.period());
         Entry entry = slot == BoardGeometry.NO_ROW || snapshot == null
                 ? null
@@ -216,16 +230,21 @@ public final class BoardHologram {
                 yield tops.get(Math.floorMod(index + cycle.step(), tops.size()));
             }
             case ButtonAction.PeriodTab tab -> current;
+            case ButtonAction.Table table -> current;
         };
     }
 
     private static @Nullable Period resolvePeriod(@NotNull HologramView view, @NotNull TopDefinition current,
                                                   @NotNull TopDefinition target, @NotNull ButtonAction action) {
-        if (!(action instanceof ButtonAction.PeriodTab tab)) {
-            return target.periodOr(view.period());
-        }
         List<Period> periods = current.periods();
-        return tab.index() < periods.size() ? periods.get(tab.index()) : null;
+        return switch (action) {
+            case ButtonAction.PeriodTab tab -> tab.index() < periods.size() ? periods.get(tab.index()) : null;
+            case ButtonAction.Table table -> periods.size() < BoardGeometry.MIN_PERIODS
+                    ? null
+                    : periods.get((Math.max(0, periods.indexOf(view.period())) + 1) % periods.size());
+            case ButtonAction.Slot slot -> target.periodOr(view.period());
+            case ButtonAction.Cycle cycle -> target.periodOr(view.period());
+        };
     }
 
     private void switchTo(@NotNull HologramView view, @NotNull TopDefinition top, @NotNull Period period,
@@ -254,7 +273,11 @@ public final class BoardHologram {
         }
         BoardFrame.Point point = viewFrame.project(eye.getX(), eye.getY(), eye.getZ(), eye.getYaw(), eye.getPitch(),
                 maxDistance);
-        return point != null && geometry.isOnRows(point.x(), point.y());
+        return point != null && geometry.isOnRows(point.x(), point.y()) && !isBlocked(player, point);
+    }
+
+    private static boolean isBlocked(@NotNull Player player, @NotNull BoardFrame.Point point) {
+        return player.rayTraceBlocks(point.distance()) != null;
     }
 
     private void tick() {

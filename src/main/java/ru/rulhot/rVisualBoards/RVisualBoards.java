@@ -18,7 +18,7 @@ import ru.rulhot.rVisualBoards.command.sub.ReloadSubCommand;
 import ru.rulhot.rVisualBoards.command.sub.RemoveSubCommand;
 import ru.rulhot.rVisualBoards.hologram.HologramKeys;
 import ru.rulhot.rVisualBoards.listener.HologramClickListener;
-import ru.rulhot.rVisualBoards.listener.HologramRowClickListener;
+import ru.rulhot.rVisualBoards.listener.HologramSwingListener;
 import ru.rulhot.rVisualBoards.listener.HologramScrollListener;
 import ru.rulhot.rVisualBoards.listener.ViewerListener;
 import ru.rulhot.rVisualBoards.listener.WorldListener;
@@ -71,7 +71,7 @@ public final class RVisualBoards extends JavaPlugin {
         clickListener = PacketEvents.getAPI().getEventManager()
                 .registerListener(new HologramClickListener(holograms, scheduler));
         pluginManager.registerEvents(new HologramScrollListener(holograms), this);
-        pluginManager.registerEvents(new HologramRowClickListener(holograms), this);
+        pluginManager.registerEvents(new HologramSwingListener(holograms), this);
         pluginManager.registerEvents(new ViewerListener(holograms), this);
         pluginManager.registerEvents(new WorldListener(holograms), this);
 

@@ -63,3 +63,10 @@ spacing:
   cell-padding: 0.08
   buttons-margin: 0.2
   depth-step: 0.01
+
+# На какую кнопку мыши срабатывает: LEFT (ЛКМ), RIGHT (ПКМ), ANY (обе), NONE (не срабатывает)
+clicks:
+  tops: ANY # кнопки топов
+  arrows: ANY # стрелки
+  periods: ANY # вкладки периодов
+  table: ANY # клик по таблице листает период вперёд. ЛКМ по строке уступает row-click, ПКМ работает вблизи, как по кнопке
