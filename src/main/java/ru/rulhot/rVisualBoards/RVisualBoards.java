@@ -16,6 +16,7 @@ import ru.rulhot.rVisualBoards.command.sub.ListSubCommand;
 import ru.rulhot.rVisualBoards.command.sub.MoveHereSubCommand;
 import ru.rulhot.rVisualBoards.command.sub.ReloadSubCommand;
 import ru.rulhot.rVisualBoards.command.sub.RemoveSubCommand;
+import ru.rulhot.rVisualBoards.command.sub.PreviewSubCommand;
 import ru.rulhot.rVisualBoards.hologram.HologramKeys;
 import ru.rulhot.rVisualBoards.listener.HologramClickListener;
 import ru.rulhot.rVisualBoards.listener.HologramSwingListener;
@@ -77,6 +78,7 @@ public final class RVisualBoards extends JavaPlugin {
 
         BoardCommand command = new BoardCommand(config, List.of(
                 new HelpSubCommand(config),
+                new PreviewSubCommand(config, boardService, holograms, scheduler),
                 new CreateSubCommand(config, boardService, tops),
                 new MoveHereSubCommand(config, boardService),
                 new RemoveSubCommand(config, boardService),

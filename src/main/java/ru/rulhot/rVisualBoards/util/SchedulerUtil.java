@@ -57,6 +57,12 @@ public final class SchedulerUtil {
         entity.getScheduler().run(plugin, handle -> guarded(task), null);
     }
 
+    public void runFor(@NotNull Entity entity, @NotNull Runnable task, @NotNull Runnable retired) {
+        if (entity.getScheduler().run(plugin, handle -> guarded(task), retired) == null) {
+            retired.run();
+        }
+    }
+
     public void runFor(@NotNull CommandSender sender, @NotNull Runnable task) {
         if (sender instanceof Entity entity) {
             runFor(entity, task);

@@ -94,6 +94,12 @@ public final class HologramManager {
         return hitboxes;
     }
 
+    public void preview(String id, UUID viewer, BoardHologram.Preview mode, java.util.function.Consumer<Boolean> result) {
+        BoardHologram board = holograms.get(id);
+        if (board == null) result.accept(false);
+        else board.preview(viewer, mode, result);
+    }
+
     public int size() {
         return holograms.size();
     }

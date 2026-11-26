@@ -61,6 +61,14 @@ final class HologramSpawner {
         List<Group> groups = new ArrayList<>();
 
         List<HologramPart> titleParts = new ArrayList<>();
+        if (context.layout().paged()) {
+            addPanel(viewer, frame, titleParts, 0D, 0D, -spacing.depthStep(), table.width(),
+                    geometry.height(), colors.column());
+            for (double y : new double[]{geometry.tableBottom(), geometry.tableTop()}) {
+                addPanel(viewer, frame, titleParts, 0D, y, 0D, table.width(), BoardGeometry.PIXEL,
+                        colors.header());
+            }
+        }
         addPanel(viewer, frame, titleParts, 0D, geometry.titleBottom(), 0D, table.width(), spacing.titleHeight(), colors.title());
         HologramPart title = text(viewer, frame, 0D,
                 BoardGeometry.textBottom(geometry.titleBottom(), spacing.titleHeight(), table.titleScale()),
@@ -68,8 +76,9 @@ final class HologramSpawner {
         titleParts.add(title);
         HologramPart subtitle = null;
         if (spacing.subtitleHeight() > 0D) {
+            double subtitleScale = table.textScale() * (context.layout().paged() ? 0.72 : 1);
             subtitle = text(viewer, frame, 0D, BoardGeometry.textBottom(geometry.titleBottom() - spacing.subtitleHeight(),
-                    spacing.subtitleHeight(), table.textScale()), textDepth, table.textScale(),
+                    spacing.subtitleHeight(), subtitleScale), textDepth, subtitleScale,
                     TextDisplay.TextAlignment.CENTER);
             titleParts.add(subtitle);
         }
@@ -88,9 +97,9 @@ final class HologramSpawner {
         List<HologramPart> headerParts = new ArrayList<>();
         List<HologramPart> columnParts = new ArrayList<>();
         for (Column column : columns) {
-            addPanel(viewer, frame, headerParts, column.center(), geometry.headerBottom(), 0D, column.width(),
+            if (!context.layout().paged()) addPanel(viewer, frame, headerParts, column.center(), geometry.headerBottom(), 0D, column.width(),
                     spacing.headerHeight(), colors.header());
-            addPanel(viewer, frame, columnParts, column.center(), geometry.tableBottom(), 0D, column.width(),
+            if (!context.layout().paged()) addPanel(viewer, frame, columnParts, column.center(), geometry.tableBottom(), 0D, column.width(),
                     geometry.tableTop() - geometry.tableBottom(), colors.column());
             HologramPart header = text(viewer, frame, column.center(), headerTextBottom, textDepth, table.textScale(),
                     TextDisplay.TextAlignment.CENTER);
@@ -101,7 +110,7 @@ final class HologramSpawner {
         if (scrollbar.enabled() && context.settings().scroll().enabled()) {
             double x = geometry.width() / 2D + scrollbar.margin() + scrollbar.width() / 2D;
             double track = geometry.line() * geometry.rows();
-            addPanel(viewer, frame, columnParts, x, geometry.rowsBottom(), 0D, scrollbar.width(), track,
+            if (!context.layout().paged()) addPanel(viewer, frame, columnParts, x, geometry.rowsBottom(), 0D, scrollbar.width(), track,
                     scrollbar.track());
             thumb = panel(viewer, frame, x, geometry.rowsBottom(), spacing.depthStep(), scrollbar.width(), track,
                     TRANSPARENT);
@@ -121,7 +130,10 @@ final class HologramSpawner {
         if (table.personalRow()) {
             standing = cells(viewer, frame, geometry.standingBottom());
             List<HologramPart> standingParts = new ArrayList<>();
-            for (Column column : columns) {
+            if (context.layout().paged()) {
+                addPanel(viewer, frame, standingParts, 0, geometry.standingBottom() - spacing.gap(), 0,
+                        table.width(), geometry.line() + 2 * spacing.gap(), colors.personalRow());
+            } else for (Column column : columns) {
                 addPanel(viewer, frame, standingParts, column.center(), geometry.standingBottom() - spacing.gap(), 0D,
                         column.width(), geometry.line() + spacing.gap() * 2D, colors.personalRow());
             }
@@ -139,7 +151,9 @@ final class HologramSpawner {
         List<PacketHitbox> hitboxes = new ArrayList<>();
         for (int index = 0; index < geometry.boxCount(); index++) {
             BoardGeometry.Box box = geometry.box(index);
-            hitboxes.add(hitbox(viewer, frame, viewerId, box, actionAt(index)));
+            ButtonAction action = actionAt(index);
+            if (action instanceof ButtonAction.Navigation nav && nav.isLabel()) continue;
+            hitboxes.add(hitbox(viewer, frame, viewerId, box, action));
         }
         for (BoardGeometry.Box box : geometry.tableBoxes()) {
             hitboxes.add(hitbox(viewer, frame, viewerId, box, ButtonAction.Table.NEXT_PERIOD));
@@ -164,6 +178,7 @@ final class HologramSpawner {
     }
 
     private @NotNull ButtonAction actionAt(int index) {
+        if (context.layout().paged()) return ButtonAction.Navigation.values()[index];
         if (index < geometry.buttonCount()) {
             return new ButtonAction.Slot(index);
         }
@@ -177,6 +192,10 @@ final class HologramSpawner {
     private @NotNull Button button(@NotNull User viewer, @NotNull BoardFrame frame, @NotNull ButtonAction action,
                                    @NotNull BoardGeometry.Box box) {
         Color fill = switch (action) {
+            case ButtonAction.Navigation nav -> switch (nav) {
+                case PAGE_LEFT, PAGE_RIGHT -> TRANSPARENT;
+                default -> colors.button();
+            };
             case ButtonAction.Slot slot -> colors.button();
             case ButtonAction.Cycle cycle -> colors.arrow();
             case ButtonAction.PeriodTab tab -> colors.tab();

@@ -20,6 +20,7 @@ public record Settings(
         @NotNull Hover hover,
         @NotNull Scroll scroll,
         @NotNull Animation animation,
+        @NotNull Nicknames nicknames,
         @NotNull Advanced advanced,
         @NotNull Effects effects,
         @NotNull Sounds sounds
@@ -120,10 +121,12 @@ public record Settings(
         }
     }
 
-    public record Hover(boolean buttons, boolean rows, double scale, double rowScale, double distance,
+    public record Hover(boolean buttons, boolean rows, boolean cellOnly, List<String> columns, List<String> buttonTypes, double scale, double rowScale, double distance,
                         int durationTicks) {
 
         public static final @NotNull String BUTTONS = "hover.buttons";
+        public static final List<String> COLUMN_NAMES = List.of("place", "name", "value");
+        public static final List<String> BUTTON_TYPES = List.of("top-label", "period-label", "top-arrows", "period-arrows", "page-arrows");
         public static final @NotNull String ROWS = "hover.rows";
         public static final @NotNull String SCALE = "hover.scale";
         public static final @NotNull String ROW_SCALE = "hover.row-scale";
@@ -142,6 +145,8 @@ public record Settings(
         public static final int MAX_DURATION = 40;
 
         public Hover {
+            buttonTypes = buttonTypes.stream().map(s -> s.toLowerCase(Locale.ROOT)).filter(BUTTON_TYPES::contains).distinct().toList();
+            columns = columns.stream().map(s -> s.toLowerCase(Locale.ROOT)).filter(COLUMN_NAMES::contains).distinct().toList();
             scale = bounded(SCALE, scale, MIN_ZOOM, MAX_ZOOM, DEFAULT_SCALE);
             rowScale = bounded(ROW_SCALE, rowScale, MIN_ZOOM, MAX_ZOOM, DEFAULT_ROW_SCALE);
             distance = bounded(DISTANCE, distance, MIN_REACH, MAX_REACH, DEFAULT_DISTANCE);
@@ -153,25 +158,28 @@ public record Settings(
         }
     }
 
-    public record Scroll(boolean enabled, int maxPlaces, int step, double distance) {
+    public record Scroll(boolean enabled, int maxPlaces, int step, double distance, double resetDistance) {
 
         public static final @NotNull String ENABLED = "scroll.enabled";
         public static final @NotNull String MAX_PLACES = "scroll.max-places";
         public static final @NotNull String STEP = "scroll.step";
         public static final @NotNull String DISTANCE = "scroll.distance";
+        public static final @NotNull String RESET_DISTANCE = "scroll.reset-distance";
 
         public static final boolean DEFAULT_ENABLED = true;
         public static final int DEFAULT_MAX_PLACES = 100;
         public static final int DEFAULT_STEP = 1;
         public static final double DEFAULT_DISTANCE = 8D;
+        public static final double DEFAULT_RESET_DISTANCE = 10D;
 
         public static final int MIN_MAX_PLACES = 1;
-        public static final int MAX_MAX_PLACES = 100;
+        public static final int MAX_MAX_PLACES = 10000;
         public static final int MIN_STEP = 1;
         public static final int MAX_STEP = 30;
 
         public Scroll {
             maxPlaces = bounded(MAX_PLACES, maxPlaces, MIN_MAX_PLACES, MAX_MAX_PLACES, DEFAULT_MAX_PLACES);
+            resetDistance = bounded(RESET_DISTANCE, resetDistance, MIN_REACH, MAX_VIEW_RADIUS, DEFAULT_RESET_DISTANCE);
             step = bounded(STEP, step, MIN_STEP, MAX_STEP, DEFAULT_STEP);
             distance = bounded(DISTANCE, distance, MIN_REACH, MAX_REACH, DEFAULT_DISTANCE);
         }
@@ -179,6 +187,10 @@ public record Settings(
         public int loadedPlaces(int rows) {
             return enabled ? Math.max(rows, maxPlaces) : rows;
         }
+    }
+
+    public record Nicknames(@NotNull String ownFormat) {
+        public static final String DEFAULT_OWN_FORMAT = "<gold><bold>{name}";
     }
 
     public record Animation(
@@ -256,6 +268,8 @@ public record Settings(
     public enum AnimationType {
         SLIDE_LEFT(false),
         SLIDE_RIGHT(false),
+        SLIDE_UP(false),
+        SLIDE_DOWN(false),
         ZOOM(false),
         CASCADE(true);
 

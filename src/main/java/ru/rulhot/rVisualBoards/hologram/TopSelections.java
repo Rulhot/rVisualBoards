@@ -25,6 +25,11 @@ public final class TopSelections {
         selections.remove(viewerId);
     }
 
+    void forget(@NotNull UUID viewerId, @NotNull String boardId) {
+        Map<String, Selection> boards = selections.get(viewerId);
+        if (boards != null) boards.remove(boardId);
+    }
+
     public void clear() {
         selections.clear();
     }

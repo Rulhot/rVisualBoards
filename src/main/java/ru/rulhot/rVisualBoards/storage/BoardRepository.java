@@ -54,6 +54,7 @@ public final class BoardRepository {
         synchronized (fileLock) {
             if (dirty) {
                 write();
+                if (dirty) return false;
             }
             File file = file();
             if (file.exists()) {
@@ -176,7 +177,7 @@ public final class BoardRepository {
 
     private void write() {
         synchronized (fileLock) {
-            if (!loaded) {
+            if (!loaded || !dirty) {
                 return;
             }
             dirty = false;
@@ -197,6 +198,7 @@ public final class BoardRepository {
             File file = file();
             File parent = file.getParentFile();
             if (parent != null && !parent.isDirectory() && !parent.mkdirs()) {
+                dirty = true;
                 Logger.error("Не удалось создать папку " + parent.getPath());
                 return;
             }
@@ -205,11 +207,12 @@ public final class BoardRepository {
             try {
                 Files.writeString(temporary, yaml.saveToString(), StandardCharsets.UTF_8);
                 try {
-                    Files.move(temporary, target, StandardCopyOption.ATOMIC_MOVE);
+                    Files.move(temporary, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
                 } catch (AtomicMoveNotSupportedException exception) {
                     Files.move(temporary, target, StandardCopyOption.REPLACE_EXISTING);
                 }
             } catch (IOException exception) {
+                dirty = true;
                 Logger.error("Не удалось сохранить " + FILE, exception);
             }
         }

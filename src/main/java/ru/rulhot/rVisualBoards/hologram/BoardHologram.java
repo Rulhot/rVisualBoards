@@ -123,6 +123,29 @@ public final class BoardHologram {
         if (stopped || current == null) {
             return null;
         }
+        if (action instanceof ButtonAction.Navigation nav) {
+            if (nav.isLabel()) return null;
+            Location eye = player.getEyeLocation();
+            if (!frame.world().equals(eye.getWorld())) return null;
+            BoardFrame.Point point = view.frame().project(eye.getX(), eye.getY(), eye.getZ(),
+                    eye.getYaw(), eye.getPitch(), context.settings().scroll().distance());
+            if (point == null || !renderer.onArrow(view, current, nav, point)) return null;
+            if (nav == ButtonAction.Navigation.PAGE_LEFT || nav == ButtonAction.Navigation.PAGE_RIGHT) {
+                int step = nav == ButtonAction.Navigation.PAGE_LEFT ? -1 : 1;
+                context.scheduler().runAt(origin, () -> scrollView(view, step * view.rows().size()));
+                return null;
+            }
+            action = switch (nav) {
+                case TOP_LEFT -> ButtonAction.Cycle.PREVIOUS;
+                case TOP_LABEL, TOP_RIGHT -> ButtonAction.Cycle.NEXT;
+                default -> new ButtonAction.PeriodTab(Math.floorMod(current.periods().indexOf(view.period())
+                        + (nav == ButtonAction.Navigation.PERIOD_LEFT ? -1 : 1), current.periods().size()));
+            };
+        }
+        if (!context.layout().paged() && tops.size() == 1 && action instanceof ButtonAction.Cycle cycle) {
+            context.scheduler().runAt(origin, () -> scrollView(view, cycle.step() * view.rows().size()));
+            return null;
+        }
         TopDefinition target = resolveTop(view, current, action);
         Period period = target == null ? null : resolvePeriod(view, current, target, action);
         if (target == null || period == null || (target == current && period == view.period())) {
@@ -131,12 +154,12 @@ public final class BoardHologram {
         UUID viewerId = player.getUniqueId();
         String viewerName = player.getName();
         boolean rowsOnly = target == current;
-        context.selections().put(viewerId, board.id(), target.id(), period);
+        if (!context.layout().paged()) context.selections().put(viewerId, board.id(), target.id(), period);
         context.leaderboards().request(target.board(), period);
         context.scheduler().runAt(origin, () -> switchTo(view, target, period, viewerName, rowsOnly));
         if (context.layout().table().personalRow()) {
             context.leaderboards().fetchStanding(viewerId, viewerName, target.board(), period)
-                    .whenComplete((ignored, error) -> refreshStanding(viewerId));
+                    .thenRun(() -> refreshStanding(viewerId));
         }
         return new Selected(target, target != current);
     }
@@ -147,7 +170,7 @@ public final class BoardHologram {
 
     public @Nullable Selected flipPeriod(@NotNull Player player) {
         HologramView view = views.get(player.getUniqueId());
-        if (view == null || !accepts(ButtonAction.Table.NEXT_PERIOD, MouseKey.LEFT)
+        if (context.layout().paged() || view == null || !accepts(ButtonAction.Table.NEXT_PERIOD, MouseKey.LEFT)
                 || !isLookingAtRows(player, view.frame(), context.settings().scroll().distance())) {
             return null;
         }
@@ -174,13 +197,19 @@ public final class BoardHologram {
     }
 
     public boolean scroll(@NotNull Player player, int delta) {
+        if (context.layout().paged() || (tops.size() == 1 && context.layout().buttons().enabled() && context.layout().buttons().arrows())) return false;
         HologramView view = views.get(player.getUniqueId());
         TopDefinition top = view == null ? null : topsById.get(view.topId());
-        if (stopped || top == null || view.isAnimating() || !renderer.canScroll(view, top, delta)
+        if (stopped || top == null || view.isAnimating()
+                || (!view.wheelMoving && !renderer.canScroll(view, top, delta))
                 || !isLookingAtRows(player, view.frame(), context.settings().scroll().distance())) {
             return false;
         }
-        context.scheduler().runAt(origin, () -> scrollView(view, delta));
+        context.scheduler().runAt(origin, () -> {
+            if (stopped || views.get(view.viewerId()) != view || view.isAnimating() || !view.topId().equals(top.id())) return;
+            view.wheelTarget = renderer.wheelTarget(view, top, delta);
+            if (!view.wheelMoving) wheelStep(view, top);
+        });
         return true;
     }
 
@@ -229,6 +258,7 @@ public final class BoardHologram {
                 int index = Math.max(0, tops.indexOf(current));
                 yield tops.get(Math.floorMod(index + cycle.step(), tops.size()));
             }
+            case ButtonAction.Navigation nav -> current;
             case ButtonAction.PeriodTab tab -> current;
             case ButtonAction.Table table -> current;
         };
@@ -243,6 +273,7 @@ public final class BoardHologram {
                     ? null
                     : periods.get((Math.max(0, periods.indexOf(view.period())) + 1) % periods.size());
             case ButtonAction.Slot slot -> target.periodOr(view.period());
+            case ButtonAction.Navigation nav -> view.period();
             case ButtonAction.Cycle cycle -> target.periodOr(view.period());
         };
     }
@@ -252,9 +283,46 @@ public final class BoardHologram {
         if (stopped || views.get(view.viewerId()) != view) {
             return;
         }
+        if (view.wheelMoving) {
+            view.wheelMoving = false;
+            shiftRows(view, 0, 0);
+        }
         view.select(top.id(), period);
         view.scrollOffset(0);
         animator.play(view, top, viewerName, rowsOnly);
+    }
+
+    private void wheelStep(HologramView view, TopDefinition top) {
+        int step = Integer.compare(view.wheelTarget, view.scrollOffset());
+        if (step == 0 || !renderer.canScroll(view, top, step)) {
+            view.wheelMoving = false;
+            return;
+        }
+        view.wheelMoving = true;
+        int generation = view.generation();
+        double halfLine = step * geometry.line() * view.frame().scale() / 2;
+        shiftRows(view, halfLine, 2);
+        context.scheduler().runAtLater(origin, () -> {
+            if (!view.isCurrent(generation)) return;
+            renderer.scroll(view, top, step);
+            shiftRows(view, -halfLine, 0);
+            context.scheduler().runAtLater(origin, () -> {
+                if (!view.isCurrent(generation)) return;
+                shiftRows(view, 0, 2);
+                context.scheduler().runAtLater(origin, () -> {
+                    if (view.isCurrent(generation)) wheelStep(view, top);
+                }, 2);
+            }, 1);
+        }, 2);
+    }
+
+    private static void shiftRows(HologramView view, double offset, int ticks) {
+        for (var row : view.rows()) {
+            for (Cell cell : row) {
+                cell.part().shiftY(offset);
+                cell.part().apply(ticks);
+            }
+        }
     }
 
     private void scrollView(@NotNull HologramView view, int delta) {
@@ -298,6 +366,7 @@ public final class BoardHologram {
         int created = 0;
         boolean pending = false;
         Set<UUID> present = new HashSet<>();
+        TopDefinition initial = context.layout().paged() ? tops.getFirst() : defaultTop();
         for (Player player : frame.world().getPlayers()) {
             if (!Bukkit.isOwnedByCurrentRegion(player)) {
                 continue;
@@ -311,6 +380,14 @@ public final class BoardHologram {
             }
             UUID viewerId = player.getUniqueId();
             HologramView view = views.get(viewerId);
+            if (view != null
+                    && shouldReset(deltaX, deltaY, deltaZ, context.settings().scroll().resetDistance(),
+                    view.scrollOffset(), view.topId().equals(initial.id()),
+                    view.period() == initial.defaultPeriod())) {
+                context.selections().forget(viewerId, board.id());
+                removeView(viewerId);
+                view = null;
+            }
             if (view == null) {
                 if (deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ > radiusSquared) {
                     continue;
@@ -343,6 +420,7 @@ public final class BoardHologram {
         }
         for (UUID viewerId : List.copyOf(views.keySet())) {
             if (!present.contains(viewerId)) {
+                context.selections().forget(viewerId, board.id());
                 removeView(viewerId);
             }
         }
@@ -350,6 +428,53 @@ public final class BoardHologram {
             catchingUp = true;
             context.scheduler().runAtLater(origin, this::catchUp, CATCH_UP_DELAY_TICKS);
         }
+    }
+
+    static boolean shouldReset(double dx, double dy, double dz, double resetDistance,
+                               int offset, boolean firstTop, boolean firstPeriod) {
+        return dx * dx + dy * dy + dz * dz >= resetDistance * resetDistance && (offset != 0 || !firstTop || !firstPeriod);
+    }
+
+    public enum Preview { REFRESH, WAVE, APPEAR, SWITCH, HOVER }
+
+    public void preview(UUID viewer, Preview mode, java.util.function.Consumer<Boolean> result) {
+        context.scheduler().runAt(origin, () -> {
+            HologramView view = views.get(viewer);
+            TopDefinition top = view == null ? null : topsById.get(view.topId());
+            if (stopped || top == null || view.isAnimating() || view.wheelMoving) {
+                result.accept(false);
+                return;
+            }
+            Settings settings = context.settings();
+            boolean enabled = switch (mode) {
+                case APPEAR -> settings.animation().enabled() && settings.animation().appear();
+                case SWITCH -> settings.animation().enabled();
+                case WAVE -> settings.effects().wave();
+                case HOVER -> settings.hover().rows() && !settings.hover().columns().isEmpty();
+                case REFRESH -> true;
+            };
+            if (enabled) {
+                switch (mode) {
+                    case APPEAR -> animator.appear(view);
+                    case SWITCH -> animator.play(view, top, view.viewerName(), false);
+                    case WAVE -> wave(view);
+                    case REFRESH -> {
+                        renderer.renderTable(view, top, view.viewerName());
+                        wave(view);
+                    }
+                    case HOVER -> {
+                        int column = settings.hover().cellOnly() ? Settings.Hover.COLUMN_NAMES.indexOf(settings.hover().columns().getLast()) : -1;
+                        var parts = hoverParts(view, 1, column);
+                        int duration = settings.hover().durationTicks();
+                        zoom(parts, settings.hover().rowScale(), duration);
+                        context.scheduler().runAtLater(origin, () -> {
+                            if (!view.isDetached() && (view.hoveredRow() != 1 || view.hoveredColumn != column)) zoom(parts, NORMAL_ZOOM, duration);
+                        }, duration + 1L);
+                    }
+                }
+            }
+            result.accept(enabled);
+        });
     }
 
     private void wave(@NotNull HologramView view) {
@@ -396,10 +521,10 @@ public final class BoardHologram {
             return null;
         }
         UUID viewerId = player.getUniqueId();
-        TopSelections.Selection remembered = context.selections().get(viewerId, board.id());
+        TopSelections.Selection remembered = context.layout().paged() ? null : context.selections().get(viewerId, board.id());
         TopDefinition top = remembered == null ? null : topsById.get(remembered.topId());
         if (top == null) {
-            top = defaultTop();
+            top = context.layout().paged() ? tops.getFirst() : defaultTop();
         }
         Period period = remembered == null ? top.defaultPeriod() : top.periodOr(remembered.period());
         HologramView view = spawner.spawnView(viewer, frame, viewerId, top.id(), period);
@@ -409,7 +534,7 @@ public final class BoardHologram {
         renderer.renderTable(view, top, player.getName());
         if (context.layout().table().personalRow()) {
             context.leaderboards().fetchStanding(viewerId, player.getName(), top.board(), period)
-                    .whenComplete((ignored, error) -> refreshStanding(viewerId));
+                    .thenRun(() -> refreshStanding(viewerId));
         }
         animator.appear(view);
         return view;
@@ -432,8 +557,8 @@ public final class BoardHologram {
                     ? BoardGeometry.NO_BUTTON
                     : geometry.buttonAt(point.x(), point.y());
             if (button != view.hoveredButton()) {
-                zoom(buttonParts(view, view.hoveredButton()), NORMAL_ZOOM, hover.durationTicks());
-                zoom(buttonParts(view, button), hover.scale(), hover.durationTicks());
+                zoomHoveredButton(view, view.hoveredButton(), NORMAL_ZOOM, hover);
+                zoomHoveredButton(view, button, hover.scale(), hover);
                 view.hoveredButton(button);
                 if (button != BoardGeometry.NO_BUTTON) {
                     hoverFeedback(view, FormatKey.HINT_BUTTON, null);
@@ -454,9 +579,22 @@ public final class BoardHologram {
             int row = point == null || !hover.rows() || hover.rowScale() == NORMAL_ZOOM
                     ? BoardGeometry.NO_ROW
                     : geometry.rowAt(point.x(), point.y());
-            if (row != view.hoveredRow()) {
-                zoom(rowParts(view, view.hoveredRow()), NORMAL_ZOOM, hover.durationTicks());
-                zoom(rowParts(view, row), hover.rowScale(), hover.durationTicks());
+            int column = -1;
+            if (hover.cellOnly() && row != BoardGeometry.NO_ROW) {
+                var columns = context.layout().columns().ordered();
+                for (int i = 0; i < columns.size(); i++) {
+                    if (hover.columns().contains(Settings.Hover.COLUMN_NAMES.get(i))
+                            && point.x() >= columns.get(i).from() && point.x() <= columns.get(i).to()) {
+                        column = i;
+                        break;
+                    }
+                }
+                if (column < 0) row = BoardGeometry.NO_ROW;
+            }
+            if (row != view.hoveredRow() || column != view.hoveredColumn) {
+                zoom(hoverParts(view, view.hoveredRow(), view.hoveredColumn), NORMAL_ZOOM, hover.durationTicks());
+                zoom(hoverParts(view, row, column), hover.rowScale(), hover.durationTicks());
+                view.hoveredColumn = column;
                 view.hoveredRow(row);
             }
         }
@@ -496,9 +634,31 @@ public final class BoardHologram {
                 position.getZ(), position.getYaw(), position.getPitch(), maxDistance);
     }
 
-    private static @NotNull List<HologramPart> buttonParts(@NotNull HologramView view, int index) {
-        List<Button> buttons = view.buttons();
-        return index < 0 || index >= buttons.size() ? List.of() : buttons.get(index).parts();
+    private void zoomHoveredButton(HologramView view, int index, double scale, Settings.Hover hover) {
+        if (index == BoardGeometry.NO_BUTTON) return;
+        Button button = view.buttons().get(index);
+        String type = switch (button.action()) {
+            case ButtonAction.Navigation nav -> switch (nav) {
+                case TOP_LEFT, TOP_RIGHT -> "top-arrows";
+                case PERIOD_LEFT, PERIOD_RIGHT -> "period-arrows";
+                case PAGE_LEFT, PAGE_RIGHT -> "page-arrows";
+                case TOP_LABEL -> "top-label";
+                case PERIOD_LABEL -> "period-label";
+            };
+            case ButtonAction.Slot slot -> "top-label";
+            case ButtonAction.PeriodTab tab -> "period-label";
+            case ButtonAction.Cycle cycle -> tops.size() == 1 ? "page-arrows" : "top-arrows";
+            case ButtonAction.Table table -> "";
+        };
+        if (hover.buttonTypes().contains(type)) zoom(button.parts(), scale, hover.durationTicks());
+    }
+
+    private List<HologramPart> hoverParts(HologramView view, int row, int column) {
+        if (row == BoardGeometry.NO_ROW) return List.of();
+        var cells = view.rows().get(row - 1);
+        if (column >= 0) return List.of(cells.get(column).part());
+        return context.settings().hover().columns().stream().map(Settings.Hover.COLUMN_NAMES::indexOf)
+                .map(i -> cells.get(i).part()).toList();
     }
 
     private static @NotNull List<HologramPart> rowParts(@NotNull HologramView view, int slot) {

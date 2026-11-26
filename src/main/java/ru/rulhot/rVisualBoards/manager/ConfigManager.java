@@ -123,6 +123,9 @@ public final class ConfigManager {
                 new Hover(
                         file.bool(Hover.BUTTONS, Hover.DEFAULT_ENABLED),
                         file.bool(Hover.ROWS, Hover.DEFAULT_ENABLED),
+                        file.bool("hover.cell-only", true),
+                        file.stringList("hover.columns", Hover.COLUMN_NAMES),
+                        file.stringList("hover.button-types", Hover.BUTTON_TYPES),
                         file.decimal(Hover.SCALE, Hover.DEFAULT_SCALE),
                         file.decimal(Hover.ROW_SCALE, Hover.DEFAULT_ROW_SCALE),
                         file.decimal(Hover.DISTANCE, Hover.DEFAULT_DISTANCE),
@@ -131,7 +134,8 @@ public final class ConfigManager {
                         file.bool(Scroll.ENABLED, Scroll.DEFAULT_ENABLED),
                         file.integer(Scroll.MAX_PLACES, Scroll.DEFAULT_MAX_PLACES),
                         file.integer(Scroll.STEP, Scroll.DEFAULT_STEP),
-                        file.decimal(Scroll.DISTANCE, Scroll.DEFAULT_DISTANCE)),
+                        file.decimal(Scroll.DISTANCE, Scroll.DEFAULT_DISTANCE),
+                        file.decimal(Scroll.RESET_DISTANCE, Scroll.DEFAULT_RESET_DISTANCE)),
                 new Animation(
                         file.bool(Animation.ENABLED, Animation.DEFAULT_ENABLED),
                         file.bool(Animation.APPEAR, Animation.DEFAULT_APPEAR),
@@ -139,6 +143,8 @@ public final class ConfigManager {
                         file.integer(Animation.DURATION, Animation.DEFAULT_DURATION),
                         file.integer(Animation.STAGGER, Animation.DEFAULT_STAGGER),
                         file.decimal(Animation.DISTANCE, Animation.DEFAULT_DISTANCE)),
+                new Settings.Nicknames(
+                        file.string("nicknames.own-format", Settings.Nicknames.DEFAULT_OWN_FORMAT)),
                 new Advanced(
                         file.integer(Advanced.VIEWER_CHECK_INTERVAL, Advanced.DEFAULT_VIEWER_CHECK_INTERVAL),
                         file.integer(Advanced.HOVER_CHECK_INTERVAL, Advanced.DEFAULT_HOVER_CHECK_INTERVAL),

@@ -102,7 +102,9 @@ public final class ReloadService {
         Settings settings = loaded.config().settings();
         List<TopDefinition> allTops = loaded.types().stream().flatMap(type -> type.tops().stream()).toList();
         int places = loaded.types().stream()
-                .mapToInt(type -> settings.scroll().loadedPlaces(type.layout().table().rows()))
+                .mapToInt(type -> type.layout().paged()
+                        ? Math.max(settings.scroll().maxPlaces(), type.layout().table().rows())
+                        : settings.scroll().loadedPlaces(type.layout().table().rows()))
                 .max()
                 .orElse(0);
         holograms.stop();

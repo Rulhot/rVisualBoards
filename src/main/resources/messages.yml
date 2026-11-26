@@ -7,6 +7,7 @@ type-missing: "{prefix} <white>Нет файла <#82ABF0>tops/{type}.yml</#82AB
 
 help:
   - "{prefix} <white>Команды:"
+  - " <#82ABF0>/{command} preview [id] [эффект] <dark_gray>»</dark_gray> <white>проверить эффект на своём экране"
   - " <#82ABF0>/{command} create [id] [вид] <dark_gray>»</dark_gray> <white>поставить табло там, где ты стоишь"
   - " <#82ABF0>/{command} movehere [id] <dark_gray>»</dark_gray> <white>перенести табло к себе"
   - " <#82ABF0>/{command} edit [id] <dark_gray>»</dark_gray> <white>поворот, размер, вид, первый топ и видимость табло"
@@ -14,6 +15,10 @@ help:
   - " <#82ABF0>/{command} list <dark_gray>»</dark_gray> <white>список табло"
   - " <#82ABF0>/{command} reload <dark_gray>»</dark_gray> <white>перезагрузить конфиги и папку tops"
   - " <#82ABF0>/{command} help <dark_gray>»</dark_gray> <white>эта справка"
+
+preview:
+  usage: "{prefix} <white>/{command} preview <id> [refresh|wave|appear|switch|hover]"
+  unavailable: "{prefix} <white>Подойдите к видимому табло, дождитесь конца анимации и проверьте, включён ли эффект."
 
 create:
   usage: "{prefix} <white>Использование: <#82ABF0>/{command} create [id] [вид]"

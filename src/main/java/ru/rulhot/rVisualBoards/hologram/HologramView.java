@@ -50,6 +50,9 @@ final class HologramView {
     private @Nullable Key renderedStandingKey;
 
     private int hoveredButton = BoardGeometry.NO_BUTTON;
+    int hoveredColumn = -1;
+    int wheelTarget;
+    volatile boolean wheelMoving;
     private int hoveredRow = BoardGeometry.NO_ROW;
     private int hintedRow = BoardGeometry.NO_ROW;
 
@@ -141,6 +144,9 @@ final class HologramView {
     @NotNull BoardFrame frame() {
         return frame;
     }
+
+    String viewerName() { return viewer.getName(); }
+
 
     void destroy() {
         detach();

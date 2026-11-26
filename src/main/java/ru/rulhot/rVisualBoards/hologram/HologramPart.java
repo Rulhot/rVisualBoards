@@ -21,6 +21,7 @@ final class HologramPart {
     private float scaleZ;
     private @Nullable Color background;
     private double offsetX;
+    private double offsetY;
     private double zoom = 1D;
     private boolean faded;
     private double bounce;
@@ -65,12 +66,17 @@ final class HologramPart {
 
     void resetPose() {
         offsetX = 0D;
+        offsetY = 0D;
         zoom = 1D;
         faded = false;
     }
 
     void shift(double offsetX) {
         this.offsetX = offsetX;
+    }
+
+    void shiftY(double offsetY) {
+        this.offsetY = offsetY;
     }
 
     void zoom(double zoom) {
@@ -91,7 +97,7 @@ final class HologramPart {
 
     void apply(int durationTicks) {
         float factor = (float) zoom;
-        float lift = (float) (-(zoom - 1D) * height * stretchY / 2D + bounce);
+        float lift = (float) (-(zoom - 1D) * height * stretchY / 2D + bounce + offsetY);
         Color current = background;
         display.send(List.of(
                 PacketDisplay.interpolationDelay(0),

@@ -15,8 +15,19 @@ clicks:
 # Увеличение кнопок и строк, на которые смотрит игрок
 hover:
   buttons: true
+  button-types: # что увеличивать при наведении; [] отключает увеличение всех кнопок
+    - top-label # название рейтинга
+    - period-label # название периода
+    - top-arrows # стрелки смены рейтинга
+    - period-arrows # стрелки смены периода
+    - page-arrows # стрелки страниц
   rows: true
   scale: 1.15
+  cell-only: true # true - увеличение отдельной ячейки, false - всей строки
+  columns: # какие колонки могут увеличиваться; [] отключает увеличение всех колонок
+    - place
+    - name
+    - value
   row-scale: 1.1
   distance: 6.0
   duration-ticks: 3
@@ -27,16 +38,21 @@ scroll:
   max-places: 100 # до какого места листать
   step: 1
   distance: 8.0
+  reset-distance: 10.0 # расстояние в блоках для сброса прокрутки, рейтинга и периода на любом табло
 
 # Анимация появления табло и смены топа
-# types: SLIDE_LEFT, SLIDE_RIGHT, ZOOM, CASCADE
+# types: SLIDE_LEFT, SLIDE_RIGHT, SLIDE_UP, SLIDE_DOWN, ZOOM, CASCADE
 animation:
   enabled: true
   appear: true
-  types: [ CASCADE ]
+  types:
+    - CASCADE
   duration-ticks: 6
   stagger-ticks: 1
   distance: 0.6
+
+nicknames:
+  own-format: "<gold><bold>{name}" # оформление своего ника в списке; "{name}" для обычного вида
 
 # Эффекты табло
 effects:
@@ -59,7 +75,7 @@ placeholders:
 char-widths:
   "☠": 9
   "№": 9
-  "—": 9
+  "-": 9
   "⛃": 9
   "⌚": 9
   "◀": 9
@@ -93,4 +109,4 @@ sounds:
     volume: 0.8
     pitch: 1.0
 
-config-version: 3 #не трогать!!!
+config-version: 4 #не трогать!!!

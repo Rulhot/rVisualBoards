@@ -35,8 +35,9 @@ final class SwitchAnimator {
     void play(@NotNull HologramView view, @NotNull TopDefinition top, @NotNull String viewerName, boolean rowsOnly) {
         int generation = view.nextGeneration();
         renderer.renderButtons(view, top);
-        if (!animation.enabled()) {
+        if (context.layout().paged() || !animation.enabled()) {
             renderer.renderTable(view, top, viewerName);
+            if (animation.enabled()) animateNames(view, generation, pickType());
             return;
         }
         AnimationType type = pickType();
@@ -61,6 +62,10 @@ final class SwitchAnimator {
         }
         int generation = view.nextGeneration();
         AnimationType type = pickType();
+        if (context.layout().paged()) {
+            animateNames(view, generation, type);
+            return;
+        }
         List<Group> groups = new ArrayList<>(view.groups());
         List<HologramPart> buttonParts = view.buttons().stream().flatMap(button -> button.parts().stream()).toList();
         groups.add(new Group(GroupKind.COLUMNS, 0, buttonParts));
@@ -71,6 +76,18 @@ final class SwitchAnimator {
         for (int step = 0; step < groups.size(); step++) {
             Group group = groups.get(step);
             schedule(view, generation, delay(step, type) + 1L, () -> settle(group));
+        }
+    }
+
+    private void animateNames(HologramView view, int generation, AnimationType type) {
+        for (int index = 0; index < view.rows().size(); index++) {
+            HologramPart name = view.rows().get(index).get(1).part();
+            pose(name, type, false);
+            name.apply(0);
+            schedule(view, generation, delay(index, type) + 1L, () -> {
+                name.resetPose();
+                name.apply(animation.durationTicks());
+            });
         }
     }
 
@@ -136,6 +153,8 @@ final class SwitchAnimator {
         switch (type) {
             case SLIDE_LEFT, CASCADE -> part.shift(leaving ? -distance : distance);
             case SLIDE_RIGHT -> part.shift(leaving ? distance : -distance);
+            case SLIDE_UP -> part.shiftY(leaving ? distance : -distance);
+            case SLIDE_DOWN -> part.shiftY(leaving ? -distance : distance);
             case ZOOM -> part.zoom(MIN_ZOOM);
         }
     }

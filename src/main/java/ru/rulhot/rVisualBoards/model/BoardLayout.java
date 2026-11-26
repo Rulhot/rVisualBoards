@@ -7,6 +7,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 
 public record BoardLayout(
+        boolean paged,
         @NotNull Table table,
         @NotNull Buttons buttons,
         @NotNull Tabs tabs,

@@ -50,9 +50,7 @@ public final class TopManager {
 
     public @Nullable List<BoardType> read() {
         Path folder = plugin.getDataFolder().toPath().resolve(BoardType.FOLDER);
-        if (Files.notExists(folder)) {
-            saveBundled();
-        }
+        saveBundled();
         List<Path> files;
         try (Stream<Path> listed = Files.list(folder)) {
             files = listed.filter(path -> path.getFileName().toString().endsWith(EXTENSION)).sorted().toList();
@@ -88,6 +86,7 @@ public final class TopManager {
         try (JarFile file = new JarFile(jar)) {
             file.stream().map(JarEntry::getName)
                     .filter(name -> name.startsWith(BoardType.FOLDER + SEPARATOR) && name.endsWith(EXTENSION))
+                    .filter(name -> Files.notExists(plugin.getDataFolder().toPath().resolve(name)))
                     .forEach(name -> plugin.saveResource(name, false));
         } catch (IOException exception) {
             Logger.error("Не удалось достать папку " + BoardType.FOLDER + " из jar плагина", exception);
@@ -131,6 +130,7 @@ public final class TopManager {
 
     static @NotNull BoardLayout parseLayout(@NotNull ConfigFile file) {
         return new BoardLayout(
+                file.bool("paged", false),
                 parseTable(file),
                 parseButtons(file),
                 parseTabs(file),

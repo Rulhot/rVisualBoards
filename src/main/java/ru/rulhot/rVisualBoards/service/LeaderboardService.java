@@ -145,7 +145,7 @@ public final class LeaderboardService {
             } finally {
                 future.complete(null);
             }
-        });
+        }, () -> future.cancel(false));
         return future;
     }
 
@@ -155,7 +155,7 @@ public final class LeaderboardService {
             return;
         }
         for (Key key : current.defaults()) {
-            refreshBoard(current, key);
+            refreshIfIdle(current, key);
         }
         refreshRequested(current);
         refreshStandings(current);
@@ -173,7 +173,16 @@ public final class LeaderboardService {
                 snapshots.remove(key);
                 continue;
             }
+            refreshIfIdle(current, key);
+        }
+    }
+
+    private void refreshIfIdle(Source current, Key key) {
+        if (!loading.add(key)) return;
+        try {
             refreshBoard(current, key);
+        } finally {
+            loading.remove(key);
         }
     }
 

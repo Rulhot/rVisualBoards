@@ -110,6 +110,11 @@ final class HologramRenderer {
         return clampOffset(view.scrollOffset() + delta, snapshot(view, top)) != view.scrollOffset();
     }
 
+    int wheelTarget(HologramView view, TopDefinition top, int delta) {
+        int from = view.wheelMoving ? view.wheelTarget : view.scrollOffset();
+        return clampOffset(from + delta, snapshot(view, top));
+    }
+
     void scroll(@NotNull HologramView view, @NotNull TopDefinition top, int delta) {
         view.scrollOffset(view.scrollOffset() + delta);
         renderRows(view, top);
@@ -144,13 +149,24 @@ final class HologramRenderer {
     }
 
     void renderButtons(@NotNull HologramView view, @NotNull TopDefinition selected) {
-        view.reveal(Math.max(0, tops.indexOf(selected)), geometry.buttonCount());
+        if (!context.layout().paged()) view.reveal(Math.max(0, tops.indexOf(selected)), geometry.buttonCount());
         double labelScale = labelScale(selected);
         double tabScale = tabScale(selected);
         for (Button button : view.buttons()) {
             switch (button.action()) {
                 case ButtonAction.Cycle cycle -> button.label().text(MessageUtil.parseText(selected.format(
                         cycle == ButtonAction.Cycle.NEXT ? FormatKey.ARROW_RIGHT : FormatKey.ARROW_LEFT)));
+                case ButtonAction.Navigation nav -> {
+                    Component text = switch (nav) {
+                        case TOP_LABEL -> label(selected, selected, true);
+                        case PERIOD_LABEL -> tabLabel(selected, view.period(), true);
+                        case PAGE_LEFT, TOP_LEFT, PERIOD_LEFT -> MessageUtil.parseText(selected.format(FormatKey.ARROW_LEFT));
+                        default -> MessageUtil.parseText(selected.format(FormatKey.ARROW_RIGHT));
+                    };
+                    button.label().text(text);
+                    fitLabel(view.frame(), button, fittedScale(context.fontMetrics().width(text),
+                            button.box().width(), context.layout().buttons().textScale()));
+                }
                 case ButtonAction.Slot slot -> renderSlot(view, selected, button, slot, labelScale);
                 case ButtonAction.PeriodTab tab -> renderTab(view, selected, button, tab, tabScale);
                 case ButtonAction.Table table -> {
@@ -188,6 +204,21 @@ final class HologramRenderer {
         for (HologramPart panel : button.panels()) {
             panel.recolor(color);
         }
+    }
+
+    boolean onArrow(HologramView view, TopDefinition top, ButtonAction.Navigation nav, BoardFrame.Point point) {
+        var box = view.buttons().get(nav.ordinal()).box();
+        boolean left = switch (nav) {
+            case TOP_LEFT, PERIOD_LEFT, PAGE_LEFT -> true;
+            default -> false;
+        };
+        Component glyph = MessageUtil.parseText(top.format(left ? FormatKey.ARROW_LEFT : FormatKey.ARROW_RIGHT));
+        int pixels = context.fontMetrics().width(glyph);
+        double scale = fittedScale(pixels, box.width(), context.layout().buttons().textScale());
+        double halfWidth = pixels * BoardGeometry.PIXEL * scale / 2;
+        double halfHeight = BoardGeometry.LINE * scale / 2;
+        return Math.abs(point.x() - box.x()) <= halfWidth
+                && Math.abs(point.y() - box.bottom() - box.height() / 2) <= halfHeight;
     }
 
     private double labelScale(@NotNull TopDefinition selected) {
@@ -272,6 +303,15 @@ final class HologramRenderer {
         for (int slot = 1; slot <= view.rows().size(); slot++) {
             renderRow(view, top, snapshot, slot);
         }
+        if (context.layout().paged()) {
+            int players = snapshot == null ? 0 : snapshot.filledPlaces();
+            String count = snapshot == null ? "…" : players + (snapshot.complete() ? "" : "+");
+            if (view.subtitle() != null) view.subtitle().text(MessageUtil.parseText(top.format(FormatKey.SUBTITLE),
+                    Map.of("players", count)));
+            if (view.footer() != null) view.footer().text(MessageUtil.parseText(top.format(FormatKey.FOOTER),
+                    Map.of("page", 1 + view.scrollOffset() / geometry.rows(),
+                            "pages", Math.max(1, Math.ceilDiv(players, geometry.rows())))));
+        }
         renderThumb(view, snapshot);
         view.markRendered(key(view, top), versionOf(snapshot));
     }
@@ -282,7 +322,7 @@ final class HologramRenderer {
             return;
         }
         int filled = snapshot == null ? 0 : snapshot.filledPlaces();
-        int maxOffset = Math.max(0, filled - geometry.rows());
+        int maxOffset = maxOffset(filled);
         if (maxOffset == 0) {
             thumb.recolor(TRANSPARENT);
             return;
@@ -303,7 +343,16 @@ final class HologramRenderer {
         List<CellText> texts = rowTexts(top, view.period(), snapshot, place);
         double bottom = geometry.rowBottom(slot);
         for (int index = 0; index < row.size(); index++) {
-            setCell(view.frame(), row.get(index), columns.get(index), bottom, texts.get(index));
+            Cell cell = row.get(index);
+            CellText text = texts.get(index);
+            Entry entry = snapshot == null ? null : snapshot.entry(place);
+            if (index == 1 && entry != null && entry.name().equalsIgnoreCase(view.viewerName())) {
+                String nick = entry.name();
+                Component styled = MessageUtil.parseText(context.settings().nicknames().ownFormat(),
+                        Map.of(NAME, Component.text(nick)));
+                text = cellText(text.text().replaceText(b -> b.matchLiteral(nick).replacement(styled)));
+            }
+            setCell(view.frame(), cell, columns.get(index), bottom, text);
         }
     }
 
@@ -375,7 +424,14 @@ final class HologramRenderer {
 
     private int clampOffset(int offset, @Nullable LeaderboardSnapshot snapshot) {
         int filled = snapshot == null ? 0 : snapshot.filledPlaces();
-        return Math.clamp(offset, 0, Math.max(0, filled - geometry.rows()));
+        return Math.clamp(offset, 0, maxOffset(filled));
+    }
+
+    private int maxOffset(int filled) {
+        boolean paged = context.layout().paged() || tops.size() == 1
+                && context.layout().buttons().enabled() && context.layout().buttons().arrows();
+        return paged ? Math.max(0, filled - 1) / geometry.rows() * geometry.rows()
+                : Math.max(0, filled - geometry.rows());
     }
 
     private @Nullable LeaderboardSnapshot snapshot(@NotNull HologramView view, @NotNull TopDefinition top) {

@@ -1,0 +1,100 @@
+# Постраничный вид: верхние стрелки выбирают рейтинг и период, нижние листают страницы.
+paged: true
+tops:
+  coins:
+    label: "Монеты"
+    board: vault_eco_balance
+    title: "<white>Лидерборд"
+  kills:
+    label: "Убийства"
+    board: statistic_player_kills
+    title: "<white>Лидерборд"
+  time:
+    label: "Время"
+    board: statistic_hours_played
+    title: "<white>Лидерборд"
+
+# Доступные периоды. Первый открывается по умолчанию.
+periods:
+  - alltime
+  - monthly
+  - weekly
+  - daily
+# Названия периодов на правой кнопке.
+period-names:
+  alltime: "Всё время"
+  monthly: "Месяц"
+  weekly: "Неделя"
+  daily: "День"
+
+formats:
+  subtitle: "<gray>Всего игроков: {players}"
+  footer: "<gray>{page} / {pages}"
+  button-selected: "<yellow>{label}"
+  tab-selected: "<#ee5018>{period}"
+  arrow-left: "<white>◀"
+  arrow-right: "<white>▶"
+  header-place: ""
+  header-name: ""
+  header-value: ""
+  row-place: "<white>{place}"
+  row-name: "<white>{name}"
+  row-value: "<white>{value}"
+  empty-place: ""
+  empty-name: ""
+  empty-value: ""
+  personal-place: "<white>{position}"
+  personal-place-unranked: "<white>-"
+  personal-name: "<white>{name} (вы)"
+  personal-value: "<white>{value}"
+
+# Размеры табло. rows - число мест на странице, personal-row - отдельная строка зрителя.
+table:
+  width: 6.3
+  rows: 10
+  text-scale: 1.0
+  title-scale: 1.5
+  personal-row: true
+
+# Границы колонок от центра табло: from - левый край, to - правый. align: LEFT, CENTER или RIGHT.
+columns:
+  place:
+    from: -2.8
+    to: -1.95
+    align: RIGHT
+  name:
+    from: -1.75
+    to: 1.5
+    align: LEFT
+  value:
+    from: 1.55
+    to: 2.85
+    align: RIGHT
+
+# Высота верхних переключателей и масштаб их текста.
+buttons:
+  height: 0.4
+  text-scale: 1.0
+# Нижняя полоса со стрелками страниц и счётчиком.
+footer:
+  height: 0.38
+  color: "#00000000"
+# Цвета панелей в формате #AARRGGBB: AA задаёт непрозрачность от 00 до FF.
+colors:
+  title: "#00000000"
+  header: "#88757575"
+  column: "#CE161414"
+  personal-row: "#E8D79726"
+  button: "#E8D79726"
+# Отступы и размеры в блоках. depth-step разделяет слои фона и текста.
+spacing:
+  padding: 0.10
+  title-height: 0.37
+  subtitle-height: 0.26
+  buttons-margin: 0.14
+  gap: 0.05
+  cell-padding: 0.03
+  depth-step: 0.012
+# NONE отключает переключение периода кликом по таблице.
+clicks:
+  table: NONE

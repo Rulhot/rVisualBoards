@@ -48,7 +48,10 @@ record BoardGeometry(
         BoardLayout.Tabs tabs = layout.tabs();
         BoardLayout.Spacing spacing = layout.spacing();
         double line = LINE * table.textScale();
-        int count = buttons.enabled() && topCount > 1 ? Math.min(topCount, buttons.visible()) : 0;
+        if (layout.paged()) {
+            return paged(layout, line);
+        }
+        int count = buttons.enabled() && topCount > 0 ? Math.min(topCount, buttons.visible()) : 0;
         int arrowCount = count > 0 && buttons.arrows() ? ARROW_COUNT : 0;
         int tabCount = tabs.enabled() && periodCount >= MIN_PERIODS ? periodCount : 0;
         boolean onSide = buttons.side() != BoardLayout.Buttons.Side.BOTTOM;
@@ -96,6 +99,33 @@ record BoardGeometry(
         List<Box> tableBoxes = rightClickTable ? tableTiles(table.width(), tableBottom, tableTop) : List.of();
         return new BoardGeometry(table.width(), line, table.rows(), count, arrowCount, tabCount, buttonWidth, boxes,
                 tableBoxes, standingBottom, tableBottom, rowsBottom, tableTop, headerBottom, tabsBottom, titleBottom, height);
+    }
+
+    private static BoardGeometry paged(BoardLayout layout, double line) {
+        var spacing = layout.spacing();
+        double width = layout.table().width();
+        double pageY = spacing.padding();
+        double standing = pageY + layout.footer().height() + spacing.buttonsMargin();
+        double bottom = standing + (layout.table().personalRow() ? line + spacing.buttonsMargin() : 0);
+        double rows = bottom + spacing.gap();
+        double top = rows + layout.table().rows() * line + spacing.gap();
+        double controls = top + spacing.buttonsMargin();
+        double subtitle = controls + layout.buttons().height() + spacing.buttonsMargin();
+        double title = subtitle + spacing.subtitleHeight();
+        List<Box> boxes = new ArrayList<>();
+        double barWidth = width * 0.43;
+        double arrow = barWidth * 0.14;
+        for (double center : new double[]{-width * 0.245, width * 0.245}) {
+            double edge = (barWidth - arrow) / 2;
+            boxes.add(new Box(center - edge, controls, arrow, layout.buttons().height()));
+            boxes.add(new Box(center, controls, barWidth - 2 * arrow, layout.buttons().height()));
+            boxes.add(new Box(center + edge, controls, arrow, layout.buttons().height()));
+        }
+        boxes.add(new Box(-width * 0.14, pageY, arrow, layout.footer().height()));
+        boxes.add(new Box(width * 0.14, pageY, arrow, layout.footer().height()));
+        return new BoardGeometry(width, line, layout.table().rows(), 0, 0, 0, barWidth, boxes,
+                List.of(), standing, bottom, rows, top, top, controls, title,
+                title + spacing.titleHeight() + spacing.padding());
     }
 
     private static void sideColumn(@NotNull List<Box> boxes, @NotNull BoardLayout.Buttons buttons,
